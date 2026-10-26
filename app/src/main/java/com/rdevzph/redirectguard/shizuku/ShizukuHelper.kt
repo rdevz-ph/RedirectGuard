@@ -120,6 +120,23 @@ class ShizukuHelper(private val context: Context) {
     }
 
     /**
+     * Attempts to whitelist Redirect Guard from battery optimization via Shizuku shell.
+     * Returns true if command executed without error.
+     */
+    fun whitelistBatteryOptimization(): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val pkg = context.packageName
+            val (exitCode, _) = executeCommand(arrayOf("cmd", "deviceidle", "whitelist", "+$pkg"))
+            Log.d(TAG, "Whitelist battery optimization exit code: $exitCode")
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error whitelisting battery optimization via Shizuku", e)
+            false
+        }
+    }
+
+    /**
      * Completely recovers the accessibility service by:
      * 1. Clearing our entry from enabled_accessibility_services.
      * 2. Force stopping the app via `am force-stop` to purge Android's cached dead binder.

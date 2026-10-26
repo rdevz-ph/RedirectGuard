@@ -51,8 +51,8 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 2. Ignore keyboards / input methods so they do not alter source tracking
-        if (isInputMethodPackage(packageName)) {
+        // 2. Ignore keyboards, input methods, system UI overlays, and transient dialogs so they do not alter source tracking
+        if (isInputMethodPackage(packageName) || isTransientSystemPackage(packageName)) {
             return
         }
 
@@ -63,16 +63,9 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 4. Handle System UI (recents, notification shade, status bar)
-        if (isSystemUIPackage(packageName)) {
-            Log.d(TAG, "User active in System UI: $packageName")
-            lastActiveSourcePackage = packageName
-            return
-        }
-
         val prefs = RedirectGuardApplication.instance.preferencesManager
 
-        // 5. Whitelist system apps: system utilities like Smart Panel, Settings, System UI are never shopping apps
+        // 4. Whitelist system apps: system utilities like Settings, App Info are never shopping apps
         if (prefs.whitelistSystemApps.value && isSystemApp(packageName) && !isBrowserApp(packageName)) {
             Log.d(TAG, "User active in system utility: $packageName")
             lastActiveSourcePackage = packageName
@@ -82,16 +75,12 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         val now = SystemClock.uptimeMillis()
 
         // Detect if user launched directly from their home launcher or a system utility
-        val isCurrentWindowLauncher = rootInActiveWindow?.packageName?.toString()?.let { isLauncherPackage(it) } == true
-        val isFromLauncher = lastActiveSourcePackage != null && (isLauncherPackage(lastActiveSourcePackage) || isCurrentWindowLauncher)
+        val isFromLauncher = lastActiveSourcePackage != null && isLauncherPackage(lastActiveSourcePackage)
         val isFromSystemUI = lastActiveSourcePackage != null && isSystemUIPackage(lastActiveSourcePackage)
         val isFromSystemUtility = lastActiveSourcePackage != null &&
                 prefs.whitelistSystemApps.value &&
                 isSystemApp(lastActiveSourcePackage!!) &&
                 !isBrowserApp(lastActiveSourcePackage!!)
-
-        // Check if this is a normal launch intent (opening the app's default launcher activity)
-        val isNormalLaunch = isLauncherActivity(packageName, className)
 
         // Check if transition to a new external package
         if (lastActiveSourcePackage != null && lastActiveSourcePackage != packageName) {
@@ -109,15 +98,18 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             // - Target is not explicitly allowed
             // - Not launched from Home Launcher or System UI
             // - Not launched from a system utility
-            // - Not a normal launch intent (only block deep links / redirects)
             val shouldIntercept = prefs.isGuardEnabled.value &&
                     isGuarded &&
                     !isWhitelisted &&
                     !isExplicitlyAllowed &&
                     !isFromLauncher &&
                     !isFromSystemUI &&
-                    !isFromSystemUtility &&
-                    !isNormalLaunch
+                    !isFromSystemUtility
+
+            Log.w(
+                TAG,
+                "Check: src=$lastActiveSourcePackage -> target=$packageName | guarded=$isGuarded | whitelisted=$isWhitelisted | allowed=$isExplicitlyAllowed | fromLauncher=$isFromLauncher | fromSysUI=$isFromSystemUI | fromSysUtil=$isFromSystemUtility ==> shouldIntercept=$shouldIntercept"
+            )
 
             if (shouldIntercept) {
                 // Throttle repeated triggers within 1 second for the same target
@@ -292,8 +284,22 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
     private fun isSystemUIPackage(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
         return packageName == "com.android.systemui" ||
+                packageName == "com.google.android.systemui"
+    }
+
+    private fun isTransientSystemPackage(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        return packageName == "android" ||
+                packageName == "com.android.systemui" ||
                 packageName == "com.google.android.systemui" ||
-                packageName == "android"
+                packageName == "com.android.packageinstaller" ||
+                packageName == "com.google.android.packageinstaller" ||
+                packageName == "com.android.permissioncontroller" ||
+                packageName == "com.google.android.permissioncontroller" ||
+                packageName == "com.transsnet.store" ||
+                packageName.contains("phonehelper") ||
+                packageName.contains("smartpanel") ||
+                packageName == "com.google.android.gms"
     }
 
     private fun isInputMethodPackage(packageName: String?): Boolean {
@@ -326,28 +332,6 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             }
             val resolveInfos = packageManager.queryIntentActivities(intent, 0)
             resolveInfos.isNotEmpty()
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    private fun isLauncherActivity(packageName: String, className: String?): Boolean {
-        if (className == null) return false
-        return try {
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-            val defaultLauncherClass = launchIntent?.component?.className
-            if (defaultLauncherClass != null && defaultLauncherClass == className) {
-                return true
-            }
-
-            val intent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-                setPackage(packageName)
-            }
-            val resolveInfos = packageManager.queryIntentActivities(intent, 0)
-            resolveInfos.any {
-                it.activityInfo?.name == className || it.activityInfo?.targetActivity == className
-            }
         } catch (e: Exception) {
             false
         }

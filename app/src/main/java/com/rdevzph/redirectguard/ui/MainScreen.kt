@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -95,6 +96,7 @@ fun MainScreen(
     val guardAllExternalApps by viewModel.guardAllExternalApps.collectAsState()
     val whitelistSystemApps by viewModel.whitelistSystemApps.collectAsState()
     val guardedPackages by viewModel.guardedPackages.collectAsState()
+    val whitelistedPackages by viewModel.whitelistedPackages.collectAsState()
     val recentRedirects by viewModel.recentRedirects.collectAsState()
 
     val isAccessibilityActive by viewModel.isAccessibilityActive.collectAsState()
@@ -105,6 +107,7 @@ fun MainScreen(
     val isShizukuAuthorized by viewModel.isShizukuAuthorized.collectAsState()
     val showStatusNotification by viewModel.showStatusNotification.collectAsState()
     val areNotificationsEnabled by viewModel.areNotificationsEnabled.collectAsState()
+    val isIgnoringBatteryOptimizations by viewModel.isIgnoringBatteryOptimizations.collectAsState()
 
     val installedApps by viewModel.installedApps.collectAsState()
     val isLoadingApps by viewModel.isLoadingApps.collectAsState()
@@ -334,6 +337,26 @@ fun MainScreen(
                     onActionClick = { viewModel.openOverlaySettings() },
                     secondaryButtonText = if (!canDrawOverlays && hasShizukuPrivilege) "Grant via Shizuku" else null,
                     onSecondaryActionClick = { viewModel.grantOverlayViaShizuku() }
+                )
+            }
+
+            // Battery Optimization Card
+            item {
+                val hasShizukuPrivilege = isShizukuRunning && isShizukuAuthorized
+                StatusCard(
+                    icon = Icons.Default.BatteryChargingFull,
+                    title = "Battery Optimization",
+                    statusText = if (isIgnoringBatteryOptimizations) "Unrestricted" else "Optimized (Restricted)",
+                    isSuccess = isIgnoringBatteryOptimizations,
+                    description = if (isIgnoringBatteryOptimizations) {
+                        "Background protection is unrestricted. This helps prevent Android from stopping the accessibility service in the background."
+                    } else {
+                        "Android may stop or restrict the background accessibility service to save battery. Setting to Unrestricted helps keep protection active."
+                    },
+                    actionButtonText = if (!isIgnoringBatteryOptimizations) "Unrestrict Battery" else null,
+                    onActionClick = { viewModel.requestIgnoreBatteryOptimizations() },
+                    secondaryButtonText = if (!isIgnoringBatteryOptimizations && hasShizukuPrivilege) "Whitelist via Shizuku" else null,
+                    onSecondaryActionClick = { viewModel.whitelistBatteryOptimizationViaShizuku() }
                 )
             }
 
@@ -764,7 +787,7 @@ fun MainScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            GuardedApp.DEFAULT_SHOPPING_PRESETS.take(6).forEach { preset ->
+                            GuardedApp.DEFAULT_SHOPPING_PRESETS.forEach { preset ->
                                 val isChecked = guardedPackages.contains(preset.packageName)
                                 Row(
                                     modifier = Modifier
@@ -794,6 +817,77 @@ fun MainScreen(
                                             viewModel.togglePackageGuarded(preset.packageName, it)
                                         }
                                     )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Whitelisted Sources Section
+            if (whitelistedPackages.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Whitelisted Sources (${whitelistedPackages.size})",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        TextButton(onClick = { viewModel.clearWhitelistedSources() }) {
+                            Text("Clear All")
+                        }
+                    }
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Text(
+                                text = "Redirects originating from these apps are never intercepted because they were marked as always allowed. Tap the remove icon to enable redirect protection for that app again.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            whitelistedPackages.forEach { pkg ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (pkg == "com.android.chrome") "Google Chrome" else pkg,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = pkg,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(onClick = { viewModel.removeWhitelistedSource(pkg) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove from whitelist",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }

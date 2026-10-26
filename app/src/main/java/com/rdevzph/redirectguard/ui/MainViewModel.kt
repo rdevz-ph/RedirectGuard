@@ -1,10 +1,12 @@
 package com.rdevzph.redirectguard.ui
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -64,6 +66,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _canDrawOverlays = MutableStateFlow(checkCanDrawOverlays())
     val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays.asStateFlow()
 
+    private val _isIgnoringBatteryOptimizations = MutableStateFlow(checkIgnoringBatteryOptimizations())
+    val isIgnoringBatteryOptimizations: StateFlow<Boolean> = _isIgnoringBatteryOptimizations.asStateFlow()
+
     private val _installedApps = MutableStateFlow<List<InstalledAppItem>>(emptyList())
     val installedApps: StateFlow<List<InstalledAppItem>> = _installedApps.asStateFlow()
 
@@ -78,6 +83,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshStatus() {
         shizuku.refreshStatus()
         _canDrawOverlays.value = checkCanDrawOverlays()
+        _isIgnoringBatteryOptimizations.value = checkIgnoringBatteryOptimizations()
         _accessibilityHealth.value = RedirectGuardAccessibilityService.getServiceHealth(getApplication())
         _areNotificationsEnabled.value = androidx.core.app.NotificationManagerCompat.from(getApplication()).areNotificationsEnabled()
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(getApplication())
@@ -113,6 +119,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun removeWhitelistedSource(packageName: String) {
         prefs.removeWhitelistedSource(packageName)
+    }
+
+    fun clearWhitelistedSources() {
+        prefs.clearWhitelistedSources()
     }
 
     fun clearHistory() {
@@ -208,6 +218,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         context.startActivity(intent)
+    }
+
+    private fun checkIgnoringBatteryOptimizations(): Boolean {
+        val powerManager = getApplication<Application>().getSystemService(Context.POWER_SERVICE) as? PowerManager
+        return powerManager?.isIgnoringBatteryOptimizations(getApplication<Application>().packageName) ?: false
+    }
+
+    fun hasPromptedBatteryExemption(): Boolean = prefs.hasPromptedBatteryExemption()
+
+    fun setHasPromptedBatteryExemption(prompted: Boolean) = prefs.setHasPromptedBatteryExemption(prompted)
+
+    fun requestIgnoreBatteryOptimizations() {
+        val context = getApplication<Application>()
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            } catch (ex: Exception) {
+                openAppInfoSettings()
+            }
+        }
+    }
+
+    fun whitelistBatteryOptimizationViaShizuku(): Boolean {
+        val success = shizuku.whitelistBatteryOptimization()
+        _isIgnoringBatteryOptimizations.value = checkIgnoringBatteryOptimizations()
+        return success
     }
 
     val appVersion: String by lazy {

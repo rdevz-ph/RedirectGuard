@@ -114,6 +114,11 @@ class PreferencesManager(private val context: Context) {
         _whitelistedSourcePackages.value = updated
     }
 
+    fun clearWhitelistedSources() {
+        prefs.edit().remove(KEY_WHITELISTED_PACKAGES).apply()
+        _whitelistedSourcePackages.value = emptySet()
+    }
+
     fun addRedirectRecord(record: RedirectRecord) {
         val currentList = _recentRedirects.value.toMutableList()
         currentList.add(0, record)
@@ -149,11 +154,11 @@ class PreferencesManager(private val context: Context) {
 
     private fun getSavedGuardedPackages(): Set<String> {
         val saved = prefs.getStringSet(KEY_GUARDED_PACKAGES, null)
-        if (saved != null) {
-            return saved
-        }
-        // Fallback to default presets
         val defaultSet = GuardedApp.DEFAULT_SHOPPING_PRESETS.map { it.packageName }.toSet()
+        if (saved != null) {
+            // Automatically include built-in presets so new preset additions take effect
+            return saved + defaultSet
+        }
         prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, defaultSet).apply()
         return defaultSet
     }
@@ -211,6 +216,14 @@ class PreferencesManager(private val context: Context) {
         return list
     }
 
+    fun hasPromptedBatteryExemption(): Boolean {
+        return prefs.getBoolean(KEY_HAS_PROMPTED_BATTERY, false)
+    }
+
+    fun setHasPromptedBatteryExemption(prompted: Boolean) {
+        prefs.edit().putBoolean(KEY_HAS_PROMPTED_BATTERY, prompted).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "redirect_guard_prefs"
         private const val KEY_GUARD_ENABLED = "guard_enabled"
@@ -222,6 +235,7 @@ class PreferencesManager(private val context: Context) {
         private const val KEY_WHITELISTED_PACKAGES = "whitelisted_packages"
         private const val KEY_SHOW_STATUS_NOTIFICATION = "show_status_notification"
         private const val KEY_RECENT_REDIRECTS = "recent_redirects"
+        private const val KEY_HAS_PROMPTED_BATTERY = "has_prompted_battery"
         private const val MAX_HISTORY_ITEMS = 50
     }
 }

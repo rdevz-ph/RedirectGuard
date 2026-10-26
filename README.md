@@ -55,8 +55,9 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
 
 - **Accessibility Service**: Required to detect when apps transition to another application.
 - **Display Over Other Apps**: Required to show the confirmation prompt over the originating app.
-- **Shizuku (Optional)**: Enables advanced features such as automatic overlay permission granting, accessibility service recovery, and process termination for redirected apps.
+- **Shizuku (Optional)**: Enables advanced features such as automatic overlay permission granting, accessibility service recovery, battery optimization whitelisting, and process termination for redirected apps.
 - **Notifications (Android 13+)**: Required for service status indicators and alerts.
+- **Ignore Battery Optimizations (Optional)**: Keeps the background accessibility service running during deep sleep.
 
 ## Building and Installation
 

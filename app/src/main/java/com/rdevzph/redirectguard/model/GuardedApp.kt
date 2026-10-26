@@ -87,6 +87,13 @@ data class GuardedApp(
                 isPreset = true
             ),
             GuardedApp(
+                packageName = "com.ss.android.ugc.trill",
+                appName = "TikTok",
+                category = "Shopping & Social",
+                isGuarded = true,
+                isPreset = true
+            ),
+            GuardedApp(
                 packageName = "com.amazon.mShop.android.shopping",
                 appName = "Amazon Shopping",
                 category = "Shopping",

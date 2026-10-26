@@ -35,6 +35,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         instance = this
         _isServiceActive.value = true
         Log.d(TAG, "RedirectGuard Accessibility Service connected")
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(applicationContext)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -180,6 +181,13 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+
+            com.rdevzph.redirectguard.notification.NotificationHelper.postInterceptedNotification(
+                context = applicationContext,
+                sourceAppName = sourceName,
+                targetAppName = targetName,
+                action = RedirectAction.BLOCKED
+            )
         } else {
             // Confirmation mode:
             val record = RedirectRecord(
@@ -207,6 +215,13 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 }
                 startActivity(intent)
             }, 200L)
+
+            com.rdevzph.redirectguard.notification.NotificationHelper.postInterceptedNotification(
+                context = applicationContext,
+                sourceAppName = sourceName,
+                targetAppName = targetName,
+                action = RedirectAction.PROMPTED
+            )
         }
     }
 
@@ -365,6 +380,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         super.onDestroy()
         instance = null
         _isServiceActive.value = false
+        com.rdevzph.redirectguard.notification.NotificationHelper.cancelStatusNotification(applicationContext)
     }
 
     companion object {

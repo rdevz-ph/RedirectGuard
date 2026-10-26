@@ -17,6 +17,8 @@ class RedirectGuardApplication : Application() {
         instance = this
         preferencesManager = PreferencesManager(this)
         shizukuHelper = ShizukuHelper(this)
+        com.rdevzph.redirectguard.notification.NotificationHelper.createNotificationChannels(this)
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(this)
     }
 
     override fun onTerminate() {

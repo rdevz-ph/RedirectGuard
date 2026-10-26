@@ -1,0 +1,94 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "app/**"
+      - "build.gradle"
+      - "build.gradle.kts"
+      - "settings.gradle"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g. v1.0 - leave blank to auto-detect from build.gradle.kts)'
+        required: false
+        default: ''
+
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: bash ./gradlew assembleDebug
+
+      - name: Determine Tag
+        id: determine_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            VERSION=$(grep 'versionName\s*=' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/' | tr -d ' ')
+            TAG="v${VERSION}"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Rename debug APK
+        run: |
+          TAG="${{ env.TAG }}"
+          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/RedirectGuard-${TAG}-debug.apk
+
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RedirectGuard-${{ env.TAG }}-debug
+          path: app/build/outputs/apk/debug/*.apk
+
+      - name: Publish debug APK to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ env.TAG }}"
+          APK_PATH=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          
+          # If release exists, upload/update debug APK without recreating the release.
+          # Otherwise create the release.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists. Uploading debug APK..."
+            gh release upload "$TAG" "$APK_PATH" --clobber
+          else
+            echo "Release $TAG not found. Creating release and uploading debug APK..."
+            gh release create "$TAG" "$APK_PATH" \
+              --title "Redirect Guard $TAG" \
+              --notes-file RELEASE.md
+          fi

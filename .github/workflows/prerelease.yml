@@ -1,0 +1,170 @@
+name: Pre-Release Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the pre-release (e.g. v1.0-beta - leave blank to auto-detect from build.gradle.kts)'
+        required: false
+        default: ''
+      build_type:
+        description: 'Build type to assemble'
+        required: false
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+          - both
+      custom_release_notes:
+        description: 'Custom notes to append to pre-release notes (optional text or file path)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Determine Version and Tag
+        id: determine_tag
+        run: |
+          VERSION=$(grep 'versionName\s*=' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/' | tr -d ' ')
+          CLEAN_VER="${VERSION#v}"
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            INPUT_TAG="${{ github.event.inputs.tag_name }}"
+            TAG="${INPUT_TAG#v}"
+            TAG="v${TAG}"
+          else
+            if [[ "$CLEAN_VER" == *"-beta"* ]]; then
+              TAG="v${CLEAN_VER}"
+            else
+              TAG="v${CLEAN_VER}-beta"
+            fi
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "Determined Version: $VERSION"
+          echo "Determined Tag: $TAG"
+
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            mkdir -p app/keystore
+            echo "$KEYSTORE_BASE64" | base64 --decode > app/keystore/release.jks
+          fi
+
+      - name: Build APK
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/app/keystore/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          if [ "$BUILD_TYPE" = "debug" ]; then
+            bash ./gradlew assembleDebug
+          elif [ "$BUILD_TYPE" = "both" ]; then
+            bash ./gradlew assembleRelease assembleDebug
+          else
+            bash ./gradlew assembleRelease
+          fi
+
+      - name: Prepare APKs
+        run: |
+          TAG="${{ env.TAG }}"
+          mkdir -p dist
+          if [ -d "app/build/outputs/apk/release" ]; then
+            for apk in app/build/outputs/apk/release/*.apk; do
+              if [ -f "$apk" ]; then
+                cp "$apk" "dist/RedirectGuard-${TAG}-release.apk"
+              fi
+            done
+          fi
+          if [ -d "app/build/outputs/apk/debug" ]; then
+            for apk in app/build/outputs/apk/debug/*.apk; do
+              if [ -f "$apk" ]; then
+                cp "$apk" "dist/RedirectGuard-${TAG}-debug.apk"
+              fi
+            done
+          fi
+
+      - name: Upload pre-release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RedirectGuard-${{ env.TAG }}
+          path: dist/*.apk
+
+      - name: Publish Pre-Release on GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_NOTES: ${{ github.event.inputs.custom_release_notes }}
+        run: |
+          TAG="${{ env.TAG }}"
+          VERSION="${{ env.VERSION }}"
+          REPO="${{ github.repository }}"
+          COMMIT_SHA="${{ github.sha }}"
+
+          CLEAN_VER="${VERSION#v}"
+          printf "## Redirect Guard %s\n\n> [!WARNING]\n> This is a beta build, only use this if you want to test the app early. Features might change on the final release version.\n\n- **Current App Version:** v%s\n- **Commit Changelog:** https://github.com/%s/commit/%s\n" \
+            "$TAG" "$CLEAN_VER" "$REPO" "$COMMIT_SHA" > release_notes.md
+
+          if [ -n "$CUSTOM_NOTES" ]; then
+            if [ -f "$CUSTOM_NOTES" ]; then
+              printf "\n" >> release_notes.md
+              cat "$CUSTOM_NOTES" >> release_notes.md
+              printf "\n" >> release_notes.md
+            elif [[ "$CUSTOM_NOTES" =~ ^# ]]; then
+              printf "\n%s\n" "$CUSTOM_NOTES" >> release_notes.md
+            else
+              printf "\n### Release Notes\n\n%s\n" "$CUSTOM_NOTES" >> release_notes.md
+            fi
+          fi
+
+          APK_ARGS=()
+          for f in dist/*.apk; do
+            if [ -f "$f" ]; then
+              APK_ARGS+=("$f")
+            fi
+          done
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Pre-release $TAG already exists. Updating notes..."
+            gh release edit "$TAG" --title "Redirect Guard $TAG" --notes-file release_notes.md --prerelease
+            if [ ${#APK_ARGS[@]} -gt 0 ]; then
+              gh release upload "$TAG" "${APK_ARGS[@]}" --clobber
+            fi
+          else
+            echo "Creating new pre-release $TAG..."
+            gh release create "$TAG" "${APK_ARGS[@]}" \
+              --title "Redirect Guard $TAG" \
+              --notes-file release_notes.md \
+              --prerelease
+          fi
+
+      - name: Clean up Keystore
+        if: always()
+        run: rm -rf app/keystore

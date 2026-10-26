@@ -40,6 +40,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val guardedPackages: StateFlow<Set<String>> = prefs.guardedPackages
     val whitelistedPackages: StateFlow<Set<String>> = prefs.whitelistedSourcePackages
     val whitelistSystemApps: StateFlow<Boolean> = prefs.whitelistSystemApps
+    val showStatusNotification: StateFlow<Boolean> = prefs.showStatusNotification
     val recentRedirects: StateFlow<List<RedirectRecord>> = prefs.recentRedirects
 
     val isAccessibilityActive: StateFlow<Boolean> =
@@ -50,6 +51,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val accessibilityHealth: StateFlow<com.rdevzph.redirectguard.model.AccessibilityHealthState> =
         _accessibilityHealth.asStateFlow()
+
+    private val _areNotificationsEnabled = MutableStateFlow(
+        androidx.core.app.NotificationManagerCompat.from(application).areNotificationsEnabled()
+    )
+    val areNotificationsEnabled: StateFlow<Boolean> = _areNotificationsEnabled.asStateFlow()
 
     val isShizukuInstalled: StateFlow<Boolean> = shizuku.isShizukuInstalled
     val isShizukuRunning: StateFlow<Boolean> = shizuku.isShizukuRunning
@@ -73,10 +79,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         shizuku.refreshStatus()
         _canDrawOverlays.value = checkCanDrawOverlays()
         _accessibilityHealth.value = RedirectGuardAccessibilityService.getServiceHealth(getApplication())
+        _areNotificationsEnabled.value = androidx.core.app.NotificationManagerCompat.from(getApplication()).areNotificationsEnabled()
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(getApplication())
     }
 
     fun toggleGuard(enabled: Boolean) {
         prefs.setGuardEnabled(enabled)
+    }
+
+    fun toggleStatusNotification(enabled: Boolean) {
+        prefs.setShowStatusNotification(enabled)
     }
 
     fun setInterceptionMode(mode: InterceptionMode) {
@@ -181,6 +193,59 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)
+    }
+
+    fun openNotificationSettings() {
+        val context = getApplication<Application>()
+        val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        }
+        context.startActivity(intent)
+    }
+
+    val appVersion: String by lazy {
+        try {
+            val context = getApplication<Application>()
+            val pm = context.packageManager
+            val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(context.packageName, 0)
+            }
+            val vName = pInfo.versionName ?: "1.0"
+            val vCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode.toLong()
+            }
+            "v$vName (Build $vCode)"
+        } catch (e: Exception) {
+            "v1.0"
+        }
+    }
+
+    fun openRepositoryUrl() {
+        val context = getApplication<Application>()
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://github.com/rdevz-ph/RedirectGuard")
+        ).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Browser not available
+        }
     }
 
     private fun checkCanDrawOverlays(): Boolean {

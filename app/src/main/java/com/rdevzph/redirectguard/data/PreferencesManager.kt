@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-class PreferencesManager(context: Context) {
+class PreferencesManager(private val context: Context) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -47,8 +47,19 @@ class PreferencesManager(context: Context) {
     )
     val whitelistSystemApps: StateFlow<Boolean> = _whitelistSystemApps.asStateFlow()
 
+    private val _showStatusNotification = MutableStateFlow(
+        prefs.getBoolean(KEY_SHOW_STATUS_NOTIFICATION, true)
+    )
+    val showStatusNotification: StateFlow<Boolean> = _showStatusNotification.asStateFlow()
+
     private val _recentRedirects = MutableStateFlow(loadRecentRedirects())
     val recentRedirects: StateFlow<List<RedirectRecord>> = _recentRedirects.asStateFlow()
+
+    fun setShowStatusNotification(show: Boolean) {
+        prefs.edit().putBoolean(KEY_SHOW_STATUS_NOTIFICATION, show).apply()
+        _showStatusNotification.value = show
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
+    }
 
     fun setWhitelistSystemApps(whitelist: Boolean) {
         prefs.edit().putBoolean(KEY_WHITELIST_SYSTEM_APPS, whitelist).apply()
@@ -58,6 +69,7 @@ class PreferencesManager(context: Context) {
     fun setGuardEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_GUARD_ENABLED, enabled).apply()
         _isGuardEnabled.value = enabled
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
     }
 
     fun setInterceptionMode(mode: InterceptionMode) {
@@ -73,6 +85,7 @@ class PreferencesManager(context: Context) {
     fun setGuardAllExternalApps(guardAll: Boolean) {
         prefs.edit().putBoolean(KEY_GUARD_ALL_EXTERNAL, guardAll).apply()
         _guardAllExternalApps.value = guardAll
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
     }
 
     fun setPackageGuarded(packageName: String, guarded: Boolean) {
@@ -84,6 +97,7 @@ class PreferencesManager(context: Context) {
         }
         prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updated).apply()
         _guardedPackages.value = updated
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
     }
 
     fun addWhitelistedSource(packageName: String) {
@@ -206,6 +220,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_WHITELIST_SYSTEM_APPS = "whitelist_system_apps"
         private const val KEY_GUARDED_PACKAGES = "guarded_packages"
         private const val KEY_WHITELISTED_PACKAGES = "whitelisted_packages"
+        private const val KEY_SHOW_STATUS_NOTIFICATION = "show_status_notification"
         private const val KEY_RECENT_REDIRECTS = "recent_redirects"
         private const val MAX_HISTORY_ITEMS = 50
     }

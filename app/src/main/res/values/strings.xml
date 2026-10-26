@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Redirect Guard</string>
+    <string name="accessibility_service_label">Redirect Guard Detection Service</string>
+    <string name="accessibility_service_description">Monitors app transitions to detect when an ad or web page attempts to automatically open external shopping apps, allowing you to confirm or block the redirect. Redirect Guard does not read your screen content or personal data.</string>
+</resources>

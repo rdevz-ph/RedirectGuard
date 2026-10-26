@@ -1,0 +1,191 @@
+package com.rdevzph.redirectguard.data
+
+import android.content.Context
+import android.content.SharedPreferences
+import com.rdevzph.redirectguard.model.GuardedApp
+import com.rdevzph.redirectguard.model.InterceptionMode
+import com.rdevzph.redirectguard.model.RedirectAction
+import com.rdevzph.redirectguard.model.RedirectRecord
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
+
+class PreferencesManager(context: Context) {
+
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    private val _isGuardEnabled = MutableStateFlow(prefs.getBoolean(KEY_GUARD_ENABLED, true))
+    val isGuardEnabled: StateFlow<Boolean> = _isGuardEnabled.asStateFlow()
+
+    private val _interceptionMode = MutableStateFlow(
+        getSavedInterceptionMode()
+    )
+    val interceptionMode: StateFlow<InterceptionMode> = _interceptionMode.asStateFlow()
+
+    private val _guardAllExternalApps = MutableStateFlow(
+        prefs.getBoolean(KEY_GUARD_ALL_EXTERNAL, false)
+    )
+    val guardAllExternalApps: StateFlow<Boolean> = _guardAllExternalApps.asStateFlow()
+
+    private val _guardedPackages = MutableStateFlow(getSavedGuardedPackages())
+    val guardedPackages: StateFlow<Set<String>> = _guardedPackages.asStateFlow()
+
+    private val _whitelistedSourcePackages = MutableStateFlow(getSavedWhitelistedPackages())
+    val whitelistedSourcePackages: StateFlow<Set<String>> = _whitelistedSourcePackages.asStateFlow()
+
+    private val _whitelistSystemApps = MutableStateFlow(
+        prefs.getBoolean(KEY_WHITELIST_SYSTEM_APPS, true)
+    )
+    val whitelistSystemApps: StateFlow<Boolean> = _whitelistSystemApps.asStateFlow()
+
+    private val _recentRedirects = MutableStateFlow(loadRecentRedirects())
+    val recentRedirects: StateFlow<List<RedirectRecord>> = _recentRedirects.asStateFlow()
+
+    fun setWhitelistSystemApps(whitelist: Boolean) {
+        prefs.edit().putBoolean(KEY_WHITELIST_SYSTEM_APPS, whitelist).apply()
+        _whitelistSystemApps.value = whitelist
+    }
+
+    fun setGuardEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_GUARD_ENABLED, enabled).apply()
+        _isGuardEnabled.value = enabled
+    }
+
+    fun setInterceptionMode(mode: InterceptionMode) {
+        prefs.edit().putString(KEY_INTERCEPTION_MODE, mode.name).apply()
+        _interceptionMode.value = mode
+    }
+
+    fun setGuardAllExternalApps(guardAll: Boolean) {
+        prefs.edit().putBoolean(KEY_GUARD_ALL_EXTERNAL, guardAll).apply()
+        _guardAllExternalApps.value = guardAll
+    }
+
+    fun setPackageGuarded(packageName: String, guarded: Boolean) {
+        val updated = _guardedPackages.value.toMutableSet()
+        if (guarded) {
+            updated.add(packageName)
+        } else {
+            updated.remove(packageName)
+        }
+        prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updated).apply()
+        _guardedPackages.value = updated
+    }
+
+    fun addWhitelistedSource(packageName: String) {
+        val updated = _whitelistedSourcePackages.value.toMutableSet()
+        updated.add(packageName)
+        prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updated).apply()
+        _whitelistedSourcePackages.value = updated
+    }
+
+    fun removeWhitelistedSource(packageName: String) {
+        val updated = _whitelistedSourcePackages.value.toMutableSet()
+        updated.remove(packageName)
+        prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updated).apply()
+        _whitelistedSourcePackages.value = updated
+    }
+
+    fun addRedirectRecord(record: RedirectRecord) {
+        val currentList = _recentRedirects.value.toMutableList()
+        currentList.add(0, record)
+        if (currentList.size > MAX_HISTORY_ITEMS) {
+            currentList.removeAt(currentList.lastIndex)
+        }
+        saveRecentRedirects(currentList)
+        _recentRedirects.value = currentList
+    }
+
+    fun clearRedirectRecords() {
+        saveRecentRedirects(emptyList())
+        _recentRedirects.value = emptyList()
+    }
+
+    private fun getSavedInterceptionMode(): InterceptionMode {
+        val modeName = prefs.getString(KEY_INTERCEPTION_MODE, InterceptionMode.CONFIRMATION_DIALOG.name)
+        return try {
+            InterceptionMode.valueOf(modeName ?: InterceptionMode.CONFIRMATION_DIALOG.name)
+        } catch (e: Exception) {
+            InterceptionMode.CONFIRMATION_DIALOG
+        }
+    }
+
+    private fun getSavedGuardedPackages(): Set<String> {
+        val saved = prefs.getStringSet(KEY_GUARDED_PACKAGES, null)
+        if (saved != null) {
+            return saved
+        }
+        // Fallback to default presets
+        val defaultSet = GuardedApp.DEFAULT_SHOPPING_PRESETS.map { it.packageName }.toSet()
+        prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, defaultSet).apply()
+        return defaultSet
+    }
+
+    private fun getSavedWhitelistedPackages(): Set<String> {
+        return prefs.getStringSet(KEY_WHITELISTED_PACKAGES, emptySet()) ?: emptySet()
+    }
+
+    private fun saveRecentRedirects(records: List<RedirectRecord>) {
+        val jsonArray = JSONArray()
+        records.forEach { item ->
+            val obj = JSONObject().apply {
+                put("id", item.id)
+                put("sourcePackage", item.sourcePackage)
+                put("targetPackage", item.targetPackage)
+                put("sourceAppName", item.sourceAppName)
+                put("targetAppName", item.targetAppName)
+                put("timestamp", item.timestamp)
+                put("actionTaken", item.actionTaken.name)
+                put("triggerReason", item.triggerReason)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString(KEY_RECENT_REDIRECTS, jsonArray.toString()).apply()
+    }
+
+    private fun loadRecentRedirects(): List<RedirectRecord> {
+        val raw = prefs.getString(KEY_RECENT_REDIRECTS, null) ?: return emptyList()
+        val list = mutableListOf<RedirectRecord>()
+        try {
+            val jsonArray = JSONArray(raw)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val action = try {
+                    RedirectAction.valueOf(obj.getString("actionTaken"))
+                } catch (e: Exception) {
+                    RedirectAction.PROMPTED
+                }
+                list.add(
+                    RedirectRecord(
+                        id = obj.getString("id"),
+                        sourcePackage = obj.getString("sourcePackage"),
+                        targetPackage = obj.getString("targetPackage"),
+                        sourceAppName = obj.getString("sourceAppName"),
+                        targetAppName = obj.getString("targetAppName"),
+                        timestamp = obj.getLong("timestamp"),
+                        actionTaken = action,
+                        triggerReason = obj.getString("triggerReason")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            // Ignore parse error
+        }
+        return list
+    }
+
+    companion object {
+        private const val PREFS_NAME = "redirect_guard_prefs"
+        private const val KEY_GUARD_ENABLED = "guard_enabled"
+        private const val KEY_INTERCEPTION_MODE = "interception_mode"
+        private const val KEY_GUARD_ALL_EXTERNAL = "guard_all_external"
+        private const val KEY_WHITELIST_SYSTEM_APPS = "whitelist_system_apps"
+        private const val KEY_GUARDED_PACKAGES = "guarded_packages"
+        private const val KEY_WHITELISTED_PACKAGES = "whitelisted_packages"
+        private const val KEY_RECENT_REDIRECTS = "recent_redirects"
+        private const val MAX_HISTORY_ITEMS = 50
+    }
+}

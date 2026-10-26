@@ -144,11 +144,11 @@ class PreferencesManager(private val context: Context) {
     }
 
     private fun getSavedInterceptionStrategy(): InterceptionStrategy {
-        val strategyName = prefs.getString(KEY_INTERCEPTION_STRATEGY, InterceptionStrategy.USE_BACK.name)
+        val strategyName = prefs.getString(KEY_INTERCEPTION_STRATEGY, InterceptionStrategy.AUTO_KILL_SHIZUKU.name)
         return try {
-            InterceptionStrategy.valueOf(strategyName ?: InterceptionStrategy.USE_BACK.name)
+            InterceptionStrategy.valueOf(strategyName ?: InterceptionStrategy.AUTO_KILL_SHIZUKU.name)
         } catch (e: Exception) {
-            InterceptionStrategy.USE_BACK
+            InterceptionStrategy.AUTO_KILL_SHIZUKU
         }
     }
 
@@ -179,6 +179,9 @@ class PreferencesManager(private val context: Context) {
                 put("timestamp", item.timestamp)
                 put("actionTaken", item.actionTaken.name)
                 put("triggerReason", item.triggerReason)
+                if (item.deepLinkUri != null) {
+                    put("deepLinkUri", item.deepLinkUri)
+                }
             }
             jsonArray.put(obj)
         }
@@ -206,7 +209,8 @@ class PreferencesManager(private val context: Context) {
                         targetAppName = obj.getString("targetAppName"),
                         timestamp = obj.getLong("timestamp"),
                         actionTaken = action,
-                        triggerReason = obj.getString("triggerReason")
+                        triggerReason = obj.getString("triggerReason"),
+                        deepLinkUri = if (obj.has("deepLinkUri")) obj.getString("deepLinkUri") else null
                     )
                 )
             }

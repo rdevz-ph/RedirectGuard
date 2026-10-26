@@ -133,6 +133,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         shizuku.requestPermission()
     }
 
+    fun openShizukuApp() {
+        val context = getApplication<Application>()
+        val pm = context.packageManager
+        val intent = pm.getLaunchIntentForPackage(com.rdevzph.redirectguard.shizuku.ShizukuHelper.SHIZUKU_PACKAGE)
+        if (intent != null) {
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+        } else {
+            try {
+                val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${com.rdevzph.redirectguard.shizuku.ShizukuHelper.SHIZUKU_PACKAGE}")).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(marketIntent)
+            } catch (e: Exception) {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shizuku.rikka.app")).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(browserIntent)
+            }
+        }
+    }
+
     fun grantOverlayViaShizuku(): Boolean {
         val success = shizuku.grantOverlayPermission()
         _canDrawOverlays.value = checkCanDrawOverlays()

@@ -74,6 +74,21 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         val now = SystemClock.uptimeMillis()
 
+        // 5. Active suppression guard: if a recently intercepted target attempts to re-appear
+        // (via ad retry, secondary trampoline activity, or background intent), kill it immediately.
+        if (activeGuardedTargetPackage == packageName && now < activeGuardedTargetUntil) {
+            val isExplicitlyAllowed = allowedTargetPackage == packageName &&
+                    (now - allowedTargetTimestamp) < ALLOW_WINDOW_MS
+            if (!isExplicitlyAllowed) {
+                Log.w(TAG, "Active suppression: killing escape attempt by $packageName")
+                RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(packageName)
+                if (lastActiveSourcePackage != null) {
+                    bringPackageToFront(lastActiveSourcePackage!!)
+                }
+                return
+            }
+        }
+
         // Detect if user launched directly from their home launcher or a system utility
         val isFromLauncher = lastActiveSourcePackage != null && isLauncherPackage(lastActiveSourcePackage)
         val isFromSystemUI = lastActiveSourcePackage != null && isSystemUIPackage(lastActiveSourcePackage)
@@ -112,15 +127,17 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             )
 
             if (shouldIntercept) {
-                // Throttle repeated triggers within 1 second for the same target
-                if (now - lastTransitionTime > MIN_TRIGGER_INTERVAL_MS) {
-                    lastTransitionTime = now
-                    handleInterceptedRedirect(
-                        sourcePkg = lastActiveSourcePackage!!,
-                        targetPkg = packageName,
-                        prefs = prefs
-                    )
-                }
+                lastTransitionTime = now
+                activeGuardedTargetPackage = packageName
+                activeGuardedTargetUntil = now + ACTIVE_SUPPRESSION_WINDOW_MS
+                handleInterceptedRedirect(
+                    sourcePkg = lastActiveSourcePackage!!,
+                    targetPkg = packageName,
+                    prefs = prefs
+                )
+                // Crucial: Do not update lastActiveSourcePackage to the guarded target package
+                // so subsequent ad triggers correctly recognize sourcePkg as the active source app.
+                return
             }
         }
 
@@ -138,11 +155,15 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         Log.w(TAG, "Redirect intercepted: $sourceName ($sourcePkg) -> $targetName ($targetPkg)")
 
-        val mode = prefs.interceptionMode.value
-        val strategy = prefs.interceptionStrategy.value
+        val deepLinkUri = RedirectGuardApplication.instance.shizukuHelper.extractRecentDeepLinkUri(targetPkg)
+        Log.d(TAG, "Captured deep link URI for $targetPkg: $deepLinkUri")
 
-        // Execute configured interception mechanism
-        executeInterceptionStrategy(targetPkg, strategy)
+        // Immediately force stop target package via Shizuku shell to prevent it from escaping or continuing activities
+        val killed = RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
+        Log.d(TAG, "Force stop via Shizuku for $targetPkg: killed=$killed")
+        bringPackageToFront(sourcePkg)
+
+        val mode = prefs.interceptionMode.value
 
         if (mode == InterceptionMode.AUTO_RETURN) {
             val record = RedirectRecord(
@@ -153,19 +174,16 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 targetAppName = targetName,
                 timestamp = System.currentTimeMillis(),
                 actionTaken = RedirectAction.BLOCKED,
-                triggerReason = if (strategy == InterceptionStrategy.AUTO_KILL_SHIZUKU) {
-                    "Auto-Kill via Shizuku Blocked Redirect"
-                } else {
-                    "Auto-Return Back Blocked Redirect"
-                }
+                triggerReason = "Auto-Kill via Shizuku Blocked Redirect",
+                deepLinkUri = deepLinkUri
             )
             prefs.addRedirectRecord(record)
 
             mainHandler.post {
-                val actionMessage = if (strategy == InterceptionStrategy.AUTO_KILL_SHIZUKU) {
+                val actionMessage = if (killed) {
                     "Redirect Guard killed redirect to $targetName"
                 } else {
-                    "Redirect Guard blocked automatic redirect to $targetName"
+                    "Redirect to $targetName blocked (Shizuku required to terminate app)"
                 }
                 Toast.makeText(
                     applicationContext,
@@ -190,11 +208,12 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 targetAppName = targetName,
                 timestamp = System.currentTimeMillis(),
                 actionTaken = RedirectAction.PROMPTED,
-                triggerReason = "Confirmation Dialog Requested"
+                triggerReason = "Confirmation Dialog Requested",
+                deepLinkUri = deepLinkUri
             )
             prefs.addRedirectRecord(record)
 
-            // Launch prompt over source app after brief pause so intercept action completes
+            // Launch prompt over source app
             mainHandler.postDelayed({
                 val intent = Intent(this, RedirectConfirmationActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -204,9 +223,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                     putExtra(RedirectConfirmationActivity.EXTRA_TARGET_PKG, targetPkg)
                     putExtra(RedirectConfirmationActivity.EXTRA_SOURCE_NAME, sourceName)
                     putExtra(RedirectConfirmationActivity.EXTRA_TARGET_NAME, targetName)
+                    putExtra(RedirectConfirmationActivity.EXTRA_DEEP_LINK_URI, deepLinkUri)
                 }
                 startActivity(intent)
-            }, 200L)
+            }, 100L)
 
             com.rdevzph.redirectguard.notification.NotificationHelper.postInterceptedNotification(
                 context = applicationContext,
@@ -217,23 +237,17 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun executeInterceptionStrategy(targetPkg: String, strategy: InterceptionStrategy) {
-        when (strategy) {
-            InterceptionStrategy.AUTO_KILL_SHIZUKU -> {
-                val shizuku = RedirectGuardApplication.instance.shizukuHelper
-                val killed = if (shizuku.isPermissionGranted.value) {
-                    shizuku.forceStopPackage(targetPkg)
-                } else {
-                    false
-                }
-                if (!killed) {
-                    Log.w(TAG, "Shizuku force-stop unavailable or failed for $targetPkg, falling back to Back action")
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                }
+    fun bringPackageToFront(packageName: String) {
+        if (packageName.isBlank()) return
+        try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
-            InterceptionStrategy.USE_BACK -> {
-                performGlobalAction(GLOBAL_ACTION_BACK)
+            if (launchIntent != null) {
+                startActivity(launchIntent)
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to bring package $packageName to front", e)
         }
     }
 
@@ -241,10 +255,8 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
     fun allowTargetTemporarily(packageName: String) {
         allowedTargetPackage = packageName
         allowedTargetTimestamp = SystemClock.uptimeMillis()
-    }
-
-    fun returnToPreviousApp() {
-        performGlobalAction(GLOBAL_ACTION_BACK)
+        activeGuardedTargetPackage = null
+        activeGuardedTargetUntil = 0L
     }
 
     private fun isLauncherPackage(packageName: String?): Boolean {
@@ -371,9 +383,13 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         private const val TAG = "RedirectGuardService"
         private const val MIN_TRIGGER_INTERVAL_MS = 1000L
         private const val ALLOW_WINDOW_MS = 15000L
+        private const val ACTIVE_SUPPRESSION_WINDOW_MS = 4000L
 
         private var allowedTargetPackage: String? = null
         private var allowedTargetTimestamp: Long = 0L
+
+        private var activeGuardedTargetPackage: String? = null
+        private var activeGuardedTargetUntil: Long = 0L
 
         private val _isServiceActive = MutableStateFlow(false)
         val isServiceActive: StateFlow<Boolean> = _isServiceActive.asStateFlow()

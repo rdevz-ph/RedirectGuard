@@ -1,11 +1,19 @@
 package com.rdevzph.redirectguard.ui.prompt
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,16 +29,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -40,12 +52,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,6 +75,8 @@ import java.util.UUID
 
 class RedirectConfirmationActivity : ComponentActivity() {
 
+    private var isAllowedByUser = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -67,9 +84,51 @@ class RedirectConfirmationActivity : ComponentActivity() {
         val targetPkg = intent.getStringExtra(EXTRA_TARGET_PKG) ?: "Unknown"
         val sourceName = intent.getStringExtra(EXTRA_SOURCE_NAME) ?: sourcePkg
         val targetName = intent.getStringExtra(EXTRA_TARGET_NAME) ?: targetPkg
+        val deepLinkUri = intent.getStringExtra(EXTRA_DEEP_LINK_URI)
 
         val sourceIcon = getAppIcon(sourcePkg)
         val targetIcon = getAppIcon(targetPkg)
+
+        val blockAction = {
+            recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.BLOCKED, deepLinkUri)
+            RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
+            RedirectGuardAccessibilityService.instance?.bringPackageToFront(sourcePkg)
+            finish()
+        }
+
+        val openTargetAction = {
+            isAllowedByUser = true
+            RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(targetPkg)
+            recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.ALLOWED, deepLinkUri)
+            try {
+                val targetIntent = if (!deepLinkUri.isNullOrBlank()) {
+                    Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUri)).apply {
+                        setPackage(targetPkg)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                } else {
+                    packageManager.getLaunchIntentForPackage(targetPkg)
+                }
+
+                if (targetIntent != null) {
+                    try {
+                        startActivity(targetIntent)
+                    } catch (e: Exception) {
+                        val fallback = packageManager.getLaunchIntentForPackage(targetPkg)
+                        if (fallback != null) {
+                            startActivity(fallback)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // ignore
+            }
+            finish()
+        }
+
+        onBackPressedDispatcher.addCallback(this) {
+            blockAction()
+        }
 
         setContent {
             RedirectGuardTheme {
@@ -78,42 +137,14 @@ class RedirectConfirmationActivity : ComponentActivity() {
                     targetPkg = targetPkg,
                     sourceName = sourceName,
                     targetName = targetName,
+                    deepLinkUri = deepLinkUri,
                     sourceIcon = sourceIcon,
                     targetIcon = targetIcon,
-                    onBlock = {
-                        recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.BLOCKED)
-                        val prefs = RedirectGuardApplication.instance.preferencesManager
-                        if (prefs.interceptionStrategy.value == com.rdevzph.redirectguard.model.InterceptionStrategy.AUTO_KILL_SHIZUKU) {
-                            RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
-                        }
-                        finish()
-                    },
-                    onAllow = {
-                        RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(targetPkg)
-                        recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.ALLOWED)
-                        try {
-                            val launchIntent = packageManager.getLaunchIntentForPackage(targetPkg)
-                            if (launchIntent != null) {
-                                startActivity(launchIntent)
-                            }
-                        } catch (e: Exception) {
-                            // ignore
-                        }
-                        finish()
-                    },
+                    onBlock = blockAction,
+                    onAllow = openTargetAction,
                     onAlwaysAllowSource = {
                         RedirectGuardApplication.instance.preferencesManager.addWhitelistedSource(sourcePkg)
-                        RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(targetPkg)
-                        recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.ALLOWED)
-                        try {
-                            val launchIntent = packageManager.getLaunchIntentForPackage(targetPkg)
-                            if (launchIntent != null) {
-                                startActivity(launchIntent)
-                            }
-                        } catch (e: Exception) {
-                            // ignore
-                        }
-                        finish()
+                        openTargetAction()
                     }
                 )
             }
@@ -133,7 +164,8 @@ class RedirectConfirmationActivity : ComponentActivity() {
         targetPkg: String,
         sourceName: String,
         targetName: String,
-        action: RedirectAction
+        action: RedirectAction,
+        deepLinkUri: String?
     ) {
         val record = RedirectRecord(
             id = UUID.randomUUID().toString(),
@@ -143,9 +175,20 @@ class RedirectConfirmationActivity : ComponentActivity() {
             targetAppName = targetName,
             timestamp = System.currentTimeMillis(),
             actionTaken = action,
-            triggerReason = if (action == RedirectAction.BLOCKED) "User Blocked Redirect" else "User Allowed Redirect"
+            triggerReason = if (action == RedirectAction.BLOCKED) "User Blocked Redirect" else "User Allowed Redirect",
+            deepLinkUri = deepLinkUri
         )
         RedirectGuardApplication.instance.preferencesManager.addRedirectRecord(record)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (!isAllowedByUser && !isFinishing) {
+            val targetPkg = intent.getStringExtra(EXTRA_TARGET_PKG)
+            if (!targetPkg.isNullOrBlank()) {
+                RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
+            }
+        }
     }
 
     companion object {
@@ -153,6 +196,7 @@ class RedirectConfirmationActivity : ComponentActivity() {
         const val EXTRA_TARGET_PKG = "extra_target_pkg"
         const val EXTRA_SOURCE_NAME = "extra_source_name"
         const val EXTRA_TARGET_NAME = "extra_target_name"
+        const val EXTRA_DEEP_LINK_URI = "extra_deep_link_uri"
     }
 }
 
@@ -162,6 +206,7 @@ fun ConfirmationPromptScreen(
     targetPkg: String,
     sourceName: String,
     targetName: String,
+    deepLinkUri: String?,
     sourceIcon: Drawable?,
     targetIcon: Drawable?,
     onBlock: () -> Unit,
@@ -329,6 +374,100 @@ fun ConfirmationPromptScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                            }
+                        }
+                    }
+                }
+
+                if (!deepLinkUri.isNullOrBlank()) {
+                    var isDeepLinkExpanded by remember { mutableStateOf(false) }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Link,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Captured Deep Link",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = if (isDeepLinkExpanded) "Hidden by default for privacy" else "Hidden for privacy",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                TextButton(
+                                    onClick = { isDeepLinkExpanded = !isDeepLinkExpanded }
+                                ) {
+                                    Text(
+                                        text = if (isDeepLinkExpanded) "Hide" else "View",
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
+                                }
+                            }
+
+                            if (isDeepLinkExpanded) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        SelectionContainer(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = deepLinkUri,
+                                                style = MaterialTheme.typography.bodySmall.copy(
+                                                    fontFamily = FontFamily.Monospace
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        val context = LocalContext.current
+                                        IconButton(
+                                            onClick = {
+                                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                clipboard.setPrimaryClip(ClipData.newPlainText("Deep Link", deepLinkUri))
+                                                Toast.makeText(context, "Link copied to clipboard", Toast.LENGTH_SHORT).show()
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContentCopy,
+                                                contentDescription = "Copy Link",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

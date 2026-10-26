@@ -6,7 +6,7 @@
 - **Initial Release**: Initial official release of Redirect Guard for Android.
 - **Permission Confirmation Prompt**: Added a prompt asking whether to stay in your current app or proceed to the target app when a redirect happens.
 - **Deep Link Interception**: Added detection and blocking of unauthorized deep links from ads and external web pages.
-- **Configurable Interception Strategy**: Added options to handle redirects either by simulating the system Back button or by terminating the target app with Shizuku.
+- **Process Kill Interception**: Added automated termination of redirected target apps using Shizuku to keep you in your browser.
 - **Interception Modes**: Added the ability to choose between asking for confirmation and instant auto-return.
 - **Smart Launcher Whitelist**: Added automatic whitelisting for home screen launchers and system utilities to prevent false positives when launching apps normally.
 - **Guarded App Configuration**: Added configurable presets for shopping apps alongside an option to guard all external apps.
@@ -16,22 +16,22 @@
 ### Features
 - Deep link and app redirect interception using Android Accessibility Service
 - Choice between Confirmation Prompt and Instant Auto-Return modes
-- Choice between System Back and Shizuku Auto-Kill interception strategies
+- Reliable process termination for intercepted apps via Shizuku
 - Automatic exclusion for home screens, app drawers, and system components
 - Guarded app selection with presets for common shopping apps
 - Interactive confirmation dialog with safety timer
 - In-app activity log showing recent redirect events
-- Optional Shizuku support for one-tap permissions and process termination
+- Shizuku integration for one-tap permission setup and app termination
 - Modern Material 3 user interface with dynamic theme support
 
 ### Requirements
 - Android 7.0+ (API 24+)
 - Accessibility Service permission
 - Display over other apps permission (SYSTEM_ALERT_WINDOW)
-- Shizuku (optional, for force-stopping processes and quick permission management)
+- Shizuku (running and authorized to terminate redirected apps)
 
 ### Installation & Setup Guides
-Download the APK from the assets below, install it, and grant the Accessibility Service and Display over other apps permissions when prompted.
+Download the APK from the assets below, install it, and grant the Accessibility Service, Display over other apps, and Shizuku permissions when prompted.
 
 > [!NOTE]
 > **Which APK should I download?**

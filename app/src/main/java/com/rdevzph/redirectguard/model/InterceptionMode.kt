@@ -6,7 +6,6 @@ enum class InterceptionMode {
 }
 
 enum class InterceptionStrategy {
-    USE_BACK,
     AUTO_KILL_SHIZUKU
 }
 

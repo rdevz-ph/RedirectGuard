@@ -249,6 +249,51 @@ class ShizukuHelper(private val context: Context) {
         return forceStopPackage(context.packageName)
     }
 
+    /**
+     * Inspects recent tasks via dumpsys activity recents to extract the deep link URI (dat=...)
+     * associated with the newly launched target package.
+     */
+    fun extractRecentDeepLinkUri(packageName: String): String? {
+        if (!_isPermissionGranted.value) return null
+        return try {
+            val (exitCode, output) = executeCommand(arrayOf("dumpsys", "activity", "recents"))
+            if (exitCode != 0 || output.isBlank()) return null
+            parseDeepLinkUriFromRecents(output, packageName)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error extracting deep link URI for $packageName via Shizuku", e)
+            null
+        }
+    }
+
+    /**
+     * Parses recent tasks dump to locate the intent for the given package and extract its data URI.
+     */
+    fun parseDeepLinkUriFromRecents(dumpsysOutput: String, packageName: String): String? {
+        val blocks = dumpsysOutput.split(Regex("""\*\s+Recent\s+#\d+:"""))
+        val intentLineRegex = Regex("""intent=\{[^\n]*\bdat=([^\s}]+)""")
+        val generalDatRegex = Regex("""\bdat=([^\s}]+)""")
+
+        for (block in blocks) {
+            if (block.contains(packageName)) {
+                val intentMatch = intentLineRegex.find(block)
+                if (intentMatch != null) {
+                    val uri = intentMatch.groupValues[1]
+                    if (uri.isNotBlank() && !uri.endsWith("...")) {
+                        return uri
+                    }
+                }
+                val generalMatch = generalDatRegex.find(block)
+                if (generalMatch != null) {
+                    val uri = generalMatch.groupValues[1]
+                    if (uri.isNotBlank() && !uri.endsWith("...")) {
+                        return uri
+                    }
+                }
+            }
+        }
+        return null
+    }
+
     private fun checkShizukuInstalled(): Boolean {
         return try {
             context.packageManager.getPackageInfo(SHIZUKU_PACKAGE, 0)

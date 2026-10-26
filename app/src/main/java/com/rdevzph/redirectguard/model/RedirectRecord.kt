@@ -8,5 +8,6 @@ data class RedirectRecord(
     val targetAppName: String,
     val timestamp: Long,
     val actionTaken: RedirectAction,
-    val triggerReason: String
+    val triggerReason: String,
+    val deepLinkUri: String? = null
 )

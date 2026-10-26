@@ -137,51 +137,7 @@ class ShizukuHelper(private val context: Context) {
     }
 
     /**
-     * Completely recovers the accessibility service by:
-     * 1. Clearing our entry from enabled_accessibility_services.
-     * 2. Force stopping the app via `am force-stop` to purge Android's cached dead binder.
-     * 3. Waiting 1 second for system server cleanup.
-     * 4. Re-enabling the service entry in secure settings.
-     * 5. Relaunching the app.
-     */
-    fun forceStopAndRecoverAccessibility(componentName: String): Boolean {
-        if (!_isPermissionGranted.value) return false
-        return try {
-            val pkg = context.packageName
-            val (_, currentServices) = executeCommand(
-                arrayOf("settings", "get", "secure", "enabled_accessibility_services")
-            )
-            val cleaned = currentServices.trim().split(":")
-                .filter { it.isNotBlank() && !it.contains(pkg) }
-                .joinToString(":")
-            val disableVal = if (cleaned.isBlank() || cleaned == "null") "null" else cleaned
-            val reEnabled = if (cleaned.isBlank() || cleaned == "null") componentName else "$cleaned:$componentName"
-
-            val script = "settings put secure enabled_accessibility_services \"$disableVal\"\n" +
-                    "am force-stop \"$pkg\"\n" +
-                    "sleep 1\n" +
-                    "settings put secure enabled_accessibility_services \"$reEnabled\"\n" +
-                    "settings put secure accessibility_enabled 1\n" +
-                    "sleep 1\n" +
-                    "am start -n \"$pkg/$pkg.MainActivity\"\n"
-
-            val method = Shizuku::class.java.getDeclaredMethod(
-                "newProcess",
-                Array<String>::class.java,
-                Array<String>::class.java,
-                String::class.java
-            )
-            method.isAccessible = true
-            method.invoke(null, arrayOf("sh", "-c", script), null, null)
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Error force stopping and recovering via Shizuku", e)
-            false
-        }
-    }
-
-    /**
-     * Enables the accessibility service via Shizuku cleanly without force stopping the app.
+     * Enables the accessibility service via Shizuku cleanly.
      */
     fun enableAccessibilityService(componentName: String): Boolean {
         if (!_isPermissionGranted.value) return false
@@ -190,11 +146,14 @@ class ShizukuHelper(private val context: Context) {
                 arrayOf("settings", "get", "secure", "enabled_accessibility_services")
             )
             val trimmed = currentServices.trim()
-            val list = trimmed.split(":").filter { it.isNotBlank() && it != "null" }.toMutableList()
-            if (!list.contains(componentName)) {
-                list.add(componentName)
+            val list = trimmed.split(":").filter { it.isNotBlank() && it != "null" }
+            val cleaned = list.filter { !it.contains(context.packageName) }
+            if (list.any { it.contains(context.packageName) }) {
+                executeCommand(
+                    arrayOf("settings", "put", "secure", "enabled_accessibility_services", cleaned.joinToString(":").ifEmpty { "null" })
+                )
             }
-            val newServices = list.joinToString(":")
+            val newServices = (cleaned + componentName).joinToString(":")
             val (exitCode, _) = executeCommand(
                 arrayOf("settings", "put", "secure", "enabled_accessibility_services", newServices)
             )
@@ -233,6 +192,10 @@ class ShizukuHelper(private val context: Context) {
      */
     fun forceStopPackage(packageName: String): Boolean {
         if (!_isPermissionGranted.value) return false
+        if (packageName == "com.rdevzph.fpsmeter") {
+            Log.w(TAG, "Prevented force-stop of whitelisted app: $packageName")
+            return false
+        }
         return try {
             val (exitCode, _) = executeCommand(arrayOf("am", "force-stop", packageName))
             exitCode == 0
@@ -243,7 +206,7 @@ class ShizukuHelper(private val context: Context) {
     }
 
     /**
-     * Force stops this application using Shizuku shell to clear bad states if needed.
+     * Force stops this application using Shizuku shell to clear stuck accessibility states.
      */
     fun forceStopApp(): Boolean {
         return forceStopPackage(context.packageName)

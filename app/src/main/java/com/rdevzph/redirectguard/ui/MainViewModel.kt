@@ -11,6 +11,7 @@ import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rdevzph.redirectguard.RedirectGuardApplication
+import com.rdevzph.redirectguard.data.PreferencesManager
 import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
 import com.rdevzph.redirectguard.model.RedirectRecord
@@ -114,6 +115,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun togglePackageGuarded(packageName: String, guarded: Boolean) {
+        if (packageName == PreferencesManager.PERMANENT_WHITELISTED_PACKAGE) return
         prefs.setPackageGuarded(packageName, guarded)
     }
 
@@ -159,16 +161,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val success = shizuku.grantOverlayPermission()
         _canDrawOverlays.value = checkCanDrawOverlays()
         return success
-    }
-
-    fun recoverAccessibilityViaShizuku() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val component = RedirectGuardAccessibilityService.getServiceComponentName(getApplication())
-            shizuku.forceStopAndRecoverAccessibility(component)
-            withContext(Dispatchers.Main) {
-                refreshStatus()
-            }
-        }
     }
 
     fun enableAccessibilityViaShizuku() {
@@ -326,13 +318,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val pm = getApplication<Application>().packageManager
                 val installed = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 installed.mapNotNull { appInfo ->
-                    val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                    val label = pm.getApplicationLabel(appInfo).toString()
-                    InstalledAppItem(
-                        packageName = appInfo.packageName,
-                        appName = label,
-                        isSystemApp = isSystem
-                    )
+                    if (appInfo.packageName == PreferencesManager.PERMANENT_WHITELISTED_PACKAGE) {
+                        null
+                    } else {
+                        val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                        val label = pm.getApplicationLabel(appInfo).toString()
+                        InstalledAppItem(
+                            packageName = appInfo.packageName,
+                            appName = label,
+                            isSystemApp = isSystem
+                        )
+                    }
                 }.sortedBy { it.appName.lowercase() }
             }
             _installedApps.value = apps

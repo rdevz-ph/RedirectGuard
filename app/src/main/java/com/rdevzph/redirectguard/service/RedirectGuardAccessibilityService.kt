@@ -79,7 +79,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         if (activeGuardedTargetPackage == packageName && now < activeGuardedTargetUntil) {
             val isExplicitlyAllowed = allowedTargetPackage == packageName &&
                     (now - allowedTargetTimestamp) < ALLOW_WINDOW_MS
-            if (!isExplicitlyAllowed) {
+            if (!isExplicitlyAllowed && !prefs.isPackageWhitelisted(packageName)) {
                 Log.w(TAG, "Active suppression: killing escape attempt by $packageName")
                 RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(packageName)
                 if (lastActiveSourcePackage != null) {
@@ -99,10 +99,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         // Check if transition to a new external package
         if (lastActiveSourcePackage != null && lastActiveSourcePackage != packageName) {
-            val isGuarded = prefs.guardAllExternalApps.value ||
-                    prefs.guardedPackages.value.contains(packageName)
+            val isGuarded = !prefs.isPackageWhitelisted(packageName) &&
+                    (prefs.guardAllExternalApps.value || prefs.guardedPackages.value.contains(packageName))
 
-            val isWhitelisted = prefs.whitelistedSourcePackages.value.contains(lastActiveSourcePackage)
+            val isWhitelisted = prefs.isPackageWhitelisted(lastActiveSourcePackage)
             val isExplicitlyAllowed = allowedTargetPackage == packageName &&
                     (now - allowedTargetTimestamp) < ALLOW_WINDOW_MS
 
@@ -150,6 +150,11 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         targetPkg: String,
         prefs: com.rdevzph.redirectguard.data.PreferencesManager
     ) {
+        if (prefs.isPackageWhitelisted(targetPkg)) {
+            Log.d(TAG, "Target $targetPkg is whitelisted, skipping interception")
+            return
+        }
+
         val sourceName = getAppNameFromPackage(sourcePkg)
         val targetName = getAppNameFromPackage(targetPkg)
 

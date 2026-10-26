@@ -40,7 +40,7 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
 - **Smart Launcher and System App Whitelist**: Distinguishes between accidental redirects and intentional user actions. Launching apps from your home screen, app drawer, recent apps screen, or system utilities is never blocked.
 - **Guarded App Selection**: Guard specific shopping and external apps using built-in presets, or turn on full protection to guard against redirects to any external application.
 - **Activity Log**: Keep track of intercepted redirects, showing timestamps, source apps, target apps, and actions taken.
-- **Accessibility Service Health Checker**: Automatically detects if Android has killed the background accessibility service and offers one-tap recovery through Shizuku or the App Info screen.
+- **Accessibility Service Health Checker**: Automatically detects if Android has stopped or desynced the background accessibility service, allowing you to force stop the app to clear stuck states, enable it with one tap through Shizuku, or open system accessibility settings directly.
 
 ## How It Works
 

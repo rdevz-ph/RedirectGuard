@@ -263,8 +263,10 @@ fun MainScreen(
                             statusText = "Active & Healthy",
                             isSuccess = true,
                             description = "Monitors app window transitions to detect unwanted redirects. Running normally.",
-                            secondaryButtonText = "Open App Info",
-                            onSecondaryActionClick = { viewModel.openAppInfoSettings() }
+                            secondaryButtonText = "Accessibility Settings",
+                            onSecondaryActionClick = { viewModel.openAccessibilitySettings() },
+                            tertiaryButtonText = "Open App Info",
+                            onTertiaryActionClick = { viewModel.openAppInfoSettings() }
                         )
                     }
                     AccessibilityHealthState.KILLED_DESYNCED -> {
@@ -275,29 +277,29 @@ fun MainScreen(
                             isSuccess = false,
                             statusBgOverride = StatusInactiveContainer,
                             statusFgOverride = StatusInactive,
-                            description = "Android cached a dead service state after killing the process. Toggling settings alone will not restart it. Use Force Stop via Shizuku or App Info to purge the cache and restore the service.",
-                            actionButtonText = if (hasShizukuPrivilege) "Force Stop & Recover (Shizuku)" else "Open App Info (Force Stop)",
+                            description = "Android stopped the background service process while the setting remained enabled. Force stop the app first to clear the stuck state, then re-open the app and use 1-Tap Enable or Accessibility Settings.",
+                            actionButtonText = if (hasShizukuPrivilege) "Force Stop App (Shizuku)" else "Open App Info (Force Stop)",
                             onActionClick = {
                                 if (hasShizukuPrivilege) {
-                                    viewModel.recoverAccessibilityViaShizuku()
+                                    viewModel.forceStopAppViaShizuku()
                                 } else {
                                     viewModel.openAppInfoSettings()
                                 }
                             },
-                            secondaryButtonText = if (hasShizukuPrivilege) "Open App Info" else "Accessibility Settings",
+                            secondaryButtonText = if (hasShizukuPrivilege) "1-Tap Enable (Shizuku)" else "Accessibility Settings",
                             onSecondaryActionClick = {
                                 if (hasShizukuPrivilege) {
-                                    viewModel.openAppInfoSettings()
+                                    viewModel.enableAccessibilityViaShizuku()
                                 } else {
                                     viewModel.openAccessibilitySettings()
                                 }
                             },
-                            tertiaryButtonText = if (hasShizukuPrivilege) "Force Stop App (Shizuku)" else if (isShizukuRunning) "Authorize Shizuku for Force Stop Recovery" else null,
+                            tertiaryButtonText = if (hasShizukuPrivilege) "Accessibility Settings" else "Open App Info",
                             onTertiaryActionClick = {
                                 if (hasShizukuPrivilege) {
-                                    viewModel.forceStopAppViaShizuku()
-                                } else if (isShizukuRunning) {
-                                    viewModel.requestShizukuPermission()
+                                    viewModel.openAccessibilitySettings()
+                                } else {
+                                    viewModel.openAppInfoSettings()
                                 }
                             }
                         )
@@ -317,8 +319,16 @@ fun MainScreen(
                                     viewModel.openAccessibilitySettings()
                                 }
                             },
-                            secondaryButtonText = "Open App Info",
-                            onSecondaryActionClick = { viewModel.openAppInfoSettings() }
+                            secondaryButtonText = if (hasShizukuPrivilege) "Accessibility Settings" else "Open App Info",
+                            onSecondaryActionClick = {
+                                if (hasShizukuPrivilege) {
+                                    viewModel.openAccessibilitySettings()
+                                } else {
+                                    viewModel.openAppInfoSettings()
+                                }
+                            },
+                            tertiaryButtonText = if (hasShizukuPrivilege) "Open App Info" else null,
+                            onTertiaryActionClick = { viewModel.openAppInfoSettings() }
                         )
                     }
                 }

@@ -11,7 +11,7 @@
 - **Smart Launcher Whitelist**: Added automatic whitelisting for home screen launchers and system utilities to prevent false positives when launching apps normally.
 - **Guarded App Configuration**: Added configurable presets for shopping apps alongside an option to guard all external apps.
 - **Activity Log**: Added a log that records intercepted redirect events with timestamps, source app names, and target app names.
-- **Accessibility Health Monitoring**: Added automated detection for accessibility service status with one-tap recovery options.
+- **Accessibility Health Monitoring**: Added automated detection for killed or desynced accessibility service states, with options to force stop the app to clear stuck states, enable the service with one tap through Shizuku, and open system accessibility settings directly.
 
 ### Features
 - Deep link and app redirect interception using Android Accessibility Service
@@ -22,6 +22,7 @@
 - Interactive confirmation dialog with safety timer
 - In-app activity log showing recent redirect events
 - Shizuku integration for one-tap permission setup and app termination
+- Accessibility service health checker with one-tap enablement, stuck state clearing, and direct settings access
 - Modern Material 3 user interface with dynamic theme support
 
 ### Requirements

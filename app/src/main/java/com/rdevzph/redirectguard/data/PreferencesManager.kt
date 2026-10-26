@@ -89,6 +89,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     fun setPackageGuarded(packageName: String, guarded: Boolean) {
+        if (isPermanentWhitelisted(packageName)) return
         val updated = _guardedPackages.value.toMutableSet()
         if (guarded) {
             updated.add(packageName)
@@ -100,6 +101,16 @@ class PreferencesManager(private val context: Context) {
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
     }
 
+    fun isPackageWhitelisted(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        return packageName in PERMANENT_WHITELISTED_PACKAGES || _whitelistedSourcePackages.value.contains(packageName)
+    }
+
+    fun isPermanentWhitelisted(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        return packageName in PERMANENT_WHITELISTED_PACKAGES
+    }
+
     fun addWhitelistedSource(packageName: String) {
         val updated = _whitelistedSourcePackages.value.toMutableSet()
         updated.add(packageName)
@@ -108,6 +119,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     fun removeWhitelistedSource(packageName: String) {
+        if (isPermanentWhitelisted(packageName)) return
         val updated = _whitelistedSourcePackages.value.toMutableSet()
         updated.remove(packageName)
         prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updated).apply()
@@ -154,10 +166,13 @@ class PreferencesManager(private val context: Context) {
 
     private fun getSavedGuardedPackages(): Set<String> {
         val saved = prefs.getStringSet(KEY_GUARDED_PACKAGES, null)
-        val defaultSet = GuardedApp.DEFAULT_SHOPPING_PRESETS.map { it.packageName }.toSet()
+        val defaultSet = GuardedApp.DEFAULT_SHOPPING_PRESETS
+            .filter { it.packageName != PERMANENT_WHITELISTED_PACKAGE }
+            .map { it.packageName }
+            .toSet()
         if (saved != null) {
             // Automatically include built-in presets so new preset additions take effect
-            return saved + defaultSet
+            return (saved + defaultSet).filter { it != PERMANENT_WHITELISTED_PACKAGE }.toSet()
         }
         prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, defaultSet).apply()
         return defaultSet
@@ -229,6 +244,9 @@ class PreferencesManager(private val context: Context) {
     }
 
     companion object {
+        const val PERMANENT_WHITELISTED_PACKAGE = "com.rdevzph.fpsmeter"
+        val PERMANENT_WHITELISTED_PACKAGES = setOf(PERMANENT_WHITELISTED_PACKAGE)
+
         private const val PREFS_NAME = "redirect_guard_prefs"
         private const val KEY_GUARD_ENABLED = "guard_enabled"
         private const val KEY_INTERCEPTION_MODE = "interception_mode"

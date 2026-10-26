@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
+import com.rdevzph.redirectguard.model.InterceptionStrategy
 import com.rdevzph.redirectguard.model.RedirectAction
 import com.rdevzph.redirectguard.model.RedirectRecord
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,11 @@ class PreferencesManager(context: Context) {
         getSavedInterceptionMode()
     )
     val interceptionMode: StateFlow<InterceptionMode> = _interceptionMode.asStateFlow()
+
+    private val _interceptionStrategy = MutableStateFlow(
+        getSavedInterceptionStrategy()
+    )
+    val interceptionStrategy: StateFlow<InterceptionStrategy> = _interceptionStrategy.asStateFlow()
 
     private val _guardAllExternalApps = MutableStateFlow(
         prefs.getBoolean(KEY_GUARD_ALL_EXTERNAL, false)
@@ -57,6 +63,11 @@ class PreferencesManager(context: Context) {
     fun setInterceptionMode(mode: InterceptionMode) {
         prefs.edit().putString(KEY_INTERCEPTION_MODE, mode.name).apply()
         _interceptionMode.value = mode
+    }
+
+    fun setInterceptionStrategy(strategy: InterceptionStrategy) {
+        prefs.edit().putString(KEY_INTERCEPTION_STRATEGY, strategy.name).apply()
+        _interceptionStrategy.value = strategy
     }
 
     fun setGuardAllExternalApps(guardAll: Boolean) {
@@ -110,6 +121,15 @@ class PreferencesManager(context: Context) {
             InterceptionMode.valueOf(modeName ?: InterceptionMode.CONFIRMATION_DIALOG.name)
         } catch (e: Exception) {
             InterceptionMode.CONFIRMATION_DIALOG
+        }
+    }
+
+    private fun getSavedInterceptionStrategy(): InterceptionStrategy {
+        val strategyName = prefs.getString(KEY_INTERCEPTION_STRATEGY, InterceptionStrategy.USE_BACK.name)
+        return try {
+            InterceptionStrategy.valueOf(strategyName ?: InterceptionStrategy.USE_BACK.name)
+        } catch (e: Exception) {
+            InterceptionStrategy.USE_BACK
         }
     }
 
@@ -181,6 +201,7 @@ class PreferencesManager(context: Context) {
         private const val PREFS_NAME = "redirect_guard_prefs"
         private const val KEY_GUARD_ENABLED = "guard_enabled"
         private const val KEY_INTERCEPTION_MODE = "interception_mode"
+        private const val KEY_INTERCEPTION_STRATEGY = "interception_strategy"
         private const val KEY_GUARD_ALL_EXTERNAL = "guard_all_external"
         private const val KEY_WHITELIST_SYSTEM_APPS = "whitelist_system_apps"
         private const val KEY_GUARDED_PACKAGES = "guarded_packages"

@@ -35,6 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val isGuardEnabled: StateFlow<Boolean> = prefs.isGuardEnabled
     val interceptionMode: StateFlow<InterceptionMode> = prefs.interceptionMode
+    val interceptionStrategy: StateFlow<com.rdevzph.redirectguard.model.InterceptionStrategy> = prefs.interceptionStrategy
     val guardAllExternalApps: StateFlow<Boolean> = prefs.guardAllExternalApps
     val guardedPackages: StateFlow<Set<String>> = prefs.guardedPackages
     val whitelistedPackages: StateFlow<Set<String>> = prefs.whitelistedSourcePackages
@@ -80,6 +81,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setInterceptionMode(mode: InterceptionMode) {
         prefs.setInterceptionMode(mode)
+    }
+
+    fun setInterceptionStrategy(strategy: com.rdevzph.redirectguard.model.InterceptionStrategy) {
+        prefs.setInterceptionStrategy(strategy)
     }
 
     fun toggleGuardAll(guardAll: Boolean) {

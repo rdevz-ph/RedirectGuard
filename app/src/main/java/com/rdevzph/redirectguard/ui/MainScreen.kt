@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import com.rdevzph.redirectguard.model.AccessibilityHealthState
 import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
+import com.rdevzph.redirectguard.model.InterceptionStrategy
 import com.rdevzph.redirectguard.model.RedirectAction
 import com.rdevzph.redirectguard.ui.components.StatusCard
 import com.rdevzph.redirectguard.ui.theme.StatusActive
@@ -83,6 +84,7 @@ fun MainScreen(
 ) {
     val isGuardEnabled by viewModel.isGuardEnabled.collectAsState()
     val interceptionMode by viewModel.interceptionMode.collectAsState()
+    val interceptionStrategy by viewModel.interceptionStrategy.collectAsState()
     val guardAllExternalApps by viewModel.guardAllExternalApps.collectAsState()
     val whitelistSystemApps by viewModel.whitelistSystemApps.collectAsState()
     val guardedPackages by viewModel.guardedPackages.collectAsState()
@@ -423,8 +425,112 @@ fun MainScreen(
                 }
             }
 
+            // Interception Strategy Selector (Auto-kill via Shizuku vs Use Back)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "How to intercept redirected app:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            FilterChip(
+                                selected = interceptionStrategy == InterceptionStrategy.USE_BACK,
+                                onClick = { viewModel.setInterceptionStrategy(InterceptionStrategy.USE_BACK) },
+                                label = { Text("Use Back") },
+                                leadingIcon = if (interceptionStrategy == InterceptionStrategy.USE_BACK) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                } else null,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            FilterChip(
+                                selected = interceptionStrategy == InterceptionStrategy.AUTO_KILL_SHIZUKU,
+                                onClick = { viewModel.setInterceptionStrategy(InterceptionStrategy.AUTO_KILL_SHIZUKU) },
+                                label = { Text("Auto-Kill (Shizuku)") },
+                                leadingIcon = if (interceptionStrategy == InterceptionStrategy.AUTO_KILL_SHIZUKU) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                } else null,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = if (interceptionStrategy == InterceptionStrategy.AUTO_KILL_SHIZUKU) {
+                                "Immediately terminates the redirected app process via Shizuku shell. Stops deep links and prevents ads from running in background."
+                            } else {
+                                "Simulates the system Back button to navigate away from the redirected app. Does not require Shizuku."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (interceptionStrategy == InterceptionStrategy.AUTO_KILL_SHIZUKU && (!isShizukuRunning || !isShizukuAuthorized)) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Shizuku is not running or authorized. Redirect Guard will use Back until Shizuku is ready.",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Section: Guarded Apps
             item {
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

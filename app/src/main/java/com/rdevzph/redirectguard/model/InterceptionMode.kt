@@ -5,8 +5,14 @@ enum class InterceptionMode {
     AUTO_RETURN
 }
 
+enum class InterceptionStrategy {
+    USE_BACK,
+    AUTO_KILL_SHIZUKU
+}
+
 enum class RedirectAction {
     ALLOWED,
     BLOCKED,
     PROMPTED
 }
+

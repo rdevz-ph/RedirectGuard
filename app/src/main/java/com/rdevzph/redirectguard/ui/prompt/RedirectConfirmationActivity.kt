@@ -82,6 +82,10 @@ class RedirectConfirmationActivity : ComponentActivity() {
                     targetIcon = targetIcon,
                     onBlock = {
                         recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.BLOCKED)
+                        val prefs = RedirectGuardApplication.instance.preferencesManager
+                        if (prefs.interceptionStrategy.value == com.rdevzph.redirectguard.model.InterceptionStrategy.AUTO_KILL_SHIZUKU) {
+                            RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
+                        }
                         finish()
                     },
                     onAllow = {

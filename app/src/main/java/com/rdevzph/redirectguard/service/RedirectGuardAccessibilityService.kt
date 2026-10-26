@@ -13,6 +13,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
 import com.rdevzph.redirectguard.RedirectGuardApplication
 import com.rdevzph.redirectguard.model.InterceptionMode
+import com.rdevzph.redirectguard.model.InterceptionStrategy
 import com.rdevzph.redirectguard.model.RedirectAction
 import com.rdevzph.redirectguard.model.RedirectRecord
 import com.rdevzph.redirectguard.ui.prompt.RedirectConfirmationActivity
@@ -98,10 +99,12 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         Log.w(TAG, "Redirect intercepted: $sourceName ($sourcePkg) -> $targetName ($targetPkg)")
 
         val mode = prefs.interceptionMode.value
-        if (mode == InterceptionMode.AUTO_RETURN) {
-            // Instantly perform back action to return to source app
-            performGlobalAction(GLOBAL_ACTION_BACK)
+        val strategy = prefs.interceptionStrategy.value
 
+        // Execute configured interception mechanism
+        executeInterceptionStrategy(targetPkg, strategy)
+
+        if (mode == InterceptionMode.AUTO_RETURN) {
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -110,22 +113,28 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 targetAppName = targetName,
                 timestamp = System.currentTimeMillis(),
                 actionTaken = RedirectAction.BLOCKED,
-                triggerReason = "Auto-Return Blocked Redirect"
+                triggerReason = if (strategy == InterceptionStrategy.AUTO_KILL_SHIZUKU) {
+                    "Auto-Kill via Shizuku Blocked Redirect"
+                } else {
+                    "Auto-Return Back Blocked Redirect"
+                }
             )
             prefs.addRedirectRecord(record)
 
             mainHandler.post {
+                val actionMessage = if (strategy == InterceptionStrategy.AUTO_KILL_SHIZUKU) {
+                    "Redirect Guard killed redirect to $targetName"
+                } else {
+                    "Redirect Guard blocked automatic redirect to $targetName"
+                }
                 Toast.makeText(
                     applicationContext,
-                    "Redirect Guard blocked automatic redirect to $targetName",
+                    actionMessage,
                     Toast.LENGTH_SHORT
                 ).show()
             }
         } else {
             // Confirmation mode:
-            // Immediately bounce back to cancel the target app and abort deep link execution
-            performGlobalAction(GLOBAL_ACTION_BACK)
-
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -138,7 +147,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             )
             prefs.addRedirectRecord(record)
 
-            // Launch prompt over source app after brief pause so GLOBAL_ACTION_BACK completes
+            // Launch prompt over source app after brief pause so intercept action completes
             mainHandler.postDelayed({
                 val intent = Intent(this, RedirectConfirmationActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -153,6 +162,27 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             }, 200L)
         }
     }
+
+    private fun executeInterceptionStrategy(targetPkg: String, strategy: InterceptionStrategy) {
+        when (strategy) {
+            InterceptionStrategy.AUTO_KILL_SHIZUKU -> {
+                val shizuku = RedirectGuardApplication.instance.shizukuHelper
+                val killed = if (shizuku.isPermissionGranted.value) {
+                    shizuku.forceStopPackage(targetPkg)
+                } else {
+                    false
+                }
+                if (!killed) {
+                    Log.w(TAG, "Shizuku force-stop unavailable or failed for $targetPkg, falling back to Back action")
+                    performGlobalAction(GLOBAL_ACTION_BACK)
+                }
+            }
+            InterceptionStrategy.USE_BACK -> {
+                performGlobalAction(GLOBAL_ACTION_BACK)
+            }
+        }
+    }
+
 
     fun allowTargetTemporarily(packageName: String) {
         allowedTargetPackage = packageName

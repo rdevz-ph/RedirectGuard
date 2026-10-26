@@ -212,17 +212,24 @@ class ShizukuHelper(private val context: Context) {
     }
 
     /**
+     * Force stops the specified application package using Shizuku shell.
+     */
+    fun forceStopPackage(packageName: String): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val (exitCode, _) = executeCommand(arrayOf("am", "force-stop", packageName))
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error force stopping $packageName via Shizuku", e)
+            false
+        }
+    }
+
+    /**
      * Force stops this application using Shizuku shell to clear bad states if needed.
      */
     fun forceStopApp(): Boolean {
-        if (!_isPermissionGranted.value) return false
-        return try {
-            val (exitCode, _) = executeCommand(arrayOf("am", "force-stop", context.packageName))
-            exitCode == 0
-        } catch (e: Exception) {
-            Log.e(TAG, "Error force stopping app via Shizuku", e)
-            false
-        }
+        return forceStopPackage(context.packageName)
     }
 
     private fun checkShizukuInstalled(): Boolean {

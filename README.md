@@ -21,6 +21,14 @@ Are you tired of ads instantly redirecting you to apps like Shopee or Lazada wit
 
 Redirect Guard acts as a safety shield between your apps. When an ad, webpage, or link attempts to force-open an external application or deep link, Redirect Guard catches the redirect and gives you the choice to stay where you are or open the app.
 
+<p align="center">
+  <img src="docs/screenshots/Screenshot_1.jpg" alt="Redirect Guard Dashboard" width="31%">
+  &nbsp;
+  <img src="docs/screenshots/Alert-Sample.jpg" alt="Redirect Guard Alert Prompt" width="31%">
+  &nbsp;
+  <img src="docs/screenshots/Screenshot_2.jpg" alt="Redirect Guard Settings and Activity" width="31%">
+</p>
+
 ## Features
 
 - **Permission Confirmation Prompt**: Displays an alert asking whether you want to continue to the target app or remain in your current app, complete with a safety countdown timer.

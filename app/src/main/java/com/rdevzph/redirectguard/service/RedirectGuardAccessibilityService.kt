@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -41,26 +43,54 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         }
 
         val packageName = event.packageName?.toString() ?: return
+        val className = event.className?.toString()
 
-        // Ignore our own app and system framework UI components
-        if (packageName == applicationContext.packageName || isIgnoredSystemPackage(packageName)) {
+        // 1. Ignore our own app UI (confirmation prompt and main screen)
+        if (packageName == applicationContext.packageName) {
+            return
+        }
+
+        // 2. Ignore keyboards / input methods so they do not alter source tracking
+        if (isInputMethodPackage(packageName)) {
+            return
+        }
+
+        // 3. Handle Home Launcher: update source tracking so launches from home are never blocked
+        if (isLauncherPackage(packageName)) {
+            Log.d(TAG, "User active on Home Launcher: $packageName")
+            lastActiveSourcePackage = packageName
+            return
+        }
+
+        // 4. Handle System UI (recents, notification shade, status bar)
+        if (isSystemUIPackage(packageName)) {
+            Log.d(TAG, "User active in System UI: $packageName")
+            lastActiveSourcePackage = packageName
             return
         }
 
         val prefs = RedirectGuardApplication.instance.preferencesManager
 
-        // Whitelist system apps: system utilities like Smart Panel, Settings, System UI are never shopping apps
-        if (prefs.whitelistSystemApps.value && isSystemApp(packageName)) {
+        // 5. Whitelist system apps: system utilities like Smart Panel, Settings, System UI are never shopping apps
+        if (prefs.whitelistSystemApps.value && isSystemApp(packageName) && !isBrowserApp(packageName)) {
+            Log.d(TAG, "User active in system utility: $packageName")
+            lastActiveSourcePackage = packageName
             return
         }
 
         val now = SystemClock.uptimeMillis()
 
         // Detect if user launched directly from their home launcher or a system utility
-        val homeLauncherPackage = getHomeLauncherPackage()
-        val isFromSystemOrLauncher = lastActiveSourcePackage != null &&
-                (lastActiveSourcePackage == homeLauncherPackage ||
-                        (prefs.whitelistSystemApps.value && isSystemApp(lastActiveSourcePackage!!)))
+        val isCurrentWindowLauncher = rootInActiveWindow?.packageName?.toString()?.let { isLauncherPackage(it) } == true
+        val isFromLauncher = lastActiveSourcePackage != null && (isLauncherPackage(lastActiveSourcePackage) || isCurrentWindowLauncher)
+        val isFromSystemUI = lastActiveSourcePackage != null && isSystemUIPackage(lastActiveSourcePackage)
+        val isFromSystemUtility = lastActiveSourcePackage != null &&
+                prefs.whitelistSystemApps.value &&
+                isSystemApp(lastActiveSourcePackage!!) &&
+                !isBrowserApp(lastActiveSourcePackage!!)
+
+        // Check if this is a normal launch intent (opening the app's default launcher activity)
+        val isNormalLaunch = isLauncherActivity(packageName, className)
 
         // Check if transition to a new external package
         if (lastActiveSourcePackage != null && lastActiveSourcePackage != packageName) {
@@ -71,7 +101,24 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             val isExplicitlyAllowed = allowedTargetPackage == packageName &&
                     (now - allowedTargetTimestamp) < ALLOW_WINDOW_MS
 
-            if (prefs.isGuardEnabled.value && isGuarded && !isWhitelisted && !isFromSystemOrLauncher && !isExplicitlyAllowed) {
+            // Only intercept if:
+            // - Guard is enabled
+            // - Target is guarded
+            // - Source is not whitelisted
+            // - Target is not explicitly allowed
+            // - Not launched from Home Launcher or System UI
+            // - Not launched from a system utility
+            // - Not a normal launch intent (only block deep links / redirects)
+            val shouldIntercept = prefs.isGuardEnabled.value &&
+                    isGuarded &&
+                    !isWhitelisted &&
+                    !isExplicitlyAllowed &&
+                    !isFromLauncher &&
+                    !isFromSystemUI &&
+                    !isFromSystemUtility &&
+                    !isNormalLaunch
+
+            if (shouldIntercept) {
                 // Throttle repeated triggers within 1 second for the same target
                 if (now - lastTransitionTime > MIN_TRIGGER_INTERVAL_MS) {
                     lastTransitionTime = now
@@ -193,12 +240,102 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         performGlobalAction(GLOBAL_ACTION_BACK)
     }
 
-    private fun getHomeLauncherPackage(): String? {
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
+    private fun isLauncherPackage(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        if (packageName == "com.google.android.apps.nexuslauncher" ||
+            packageName == "com.android.launcher3" ||
+            packageName == "com.transsion.hilauncher" ||
+            packageName == "com.sec.android.app.launcher" ||
+            packageName == "com.miui.home" ||
+            packageName == "com.oppo.launcher" ||
+            packageName == "com.coloros.launcher" ||
+            packageName == "com.huawei.android.launcher" ||
+            packageName == "com.oneplus.launcher" ||
+            packageName == "com.teslacoilsw.launcher" ||
+            packageName == "com.actionlauncher.playstore"
+        ) {
+            return true
         }
-        val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-        return resolveInfo?.activityInfo?.packageName
+
+        return try {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+            }
+            resolveInfos.any { it.activityInfo?.packageName == packageName }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isSystemUIPackage(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        return packageName == "com.android.systemui" ||
+                packageName == "com.google.android.systemui" ||
+                packageName == "android"
+    }
+
+    private fun isInputMethodPackage(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        return packageName == "com.google.android.inputmethod.latin" ||
+                packageName == "com.samsung.android.honeyboard" ||
+                packageName == "com.touchtype.swiftkey" ||
+                packageName == "com.baidu.input"
+    }
+
+    private fun isBrowserApp(packageName: String): Boolean {
+        if (packageName.isBlank()) return false
+        val knownBrowsers = setOf(
+            "com.android.chrome",
+            "org.mozilla.firefox",
+            "com.opera.browser",
+            "com.opera.mini.native",
+            "com.brave.browser",
+            "com.microsoft.emmx",
+            "com.sec.android.app.sbrowser",
+            "com.transsion.phoenix",
+            "com.UCMobile.intl",
+            "com.duckduckgo.mobile.android"
+        )
+        if (knownBrowsers.contains(packageName)) return true
+
+        return try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com")).apply {
+                setPackage(packageName)
+            }
+            val resolveInfos = packageManager.queryIntentActivities(intent, 0)
+            resolveInfos.isNotEmpty()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isLauncherActivity(packageName: String, className: String?): Boolean {
+        if (className == null) return false
+        return try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            val defaultLauncherClass = launchIntent?.component?.className
+            if (defaultLauncherClass != null && defaultLauncherClass == className) {
+                return true
+            }
+
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                setPackage(packageName)
+            }
+            val resolveInfos = packageManager.queryIntentActivities(intent, 0)
+            resolveInfos.any {
+                it.activityInfo?.name == className || it.activityInfo?.targetActivity == className
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun getAppNameFromPackage(packageName: String): String {
@@ -218,14 +355,6 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             false
         }
-    }
-
-    private fun isIgnoredSystemPackage(pkg: String): Boolean {
-        return pkg == "com.android.systemui" ||
-                pkg == "com.google.android.inputmethod.latin" ||
-                pkg == "com.samsung.android.honeyboard" ||
-                pkg == "com.google.android.apps.nexuslauncher" ||
-                pkg == "com.android.launcher3"
     }
 
     override fun onInterrupt() {

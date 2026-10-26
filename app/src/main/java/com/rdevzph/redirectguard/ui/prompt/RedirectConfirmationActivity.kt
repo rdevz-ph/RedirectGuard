@@ -81,19 +81,34 @@ class RedirectConfirmationActivity : ComponentActivity() {
                     sourceIcon = sourceIcon,
                     targetIcon = targetIcon,
                     onBlock = {
-                        RedirectGuardAccessibilityService.instance?.returnToPreviousApp()
                         recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.BLOCKED)
                         finish()
                     },
                     onAllow = {
                         RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(targetPkg)
                         recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.ALLOWED)
+                        try {
+                            val launchIntent = packageManager.getLaunchIntentForPackage(targetPkg)
+                            if (launchIntent != null) {
+                                startActivity(launchIntent)
+                            }
+                        } catch (e: Exception) {
+                            // ignore
+                        }
                         finish()
                     },
                     onAlwaysAllowSource = {
                         RedirectGuardApplication.instance.preferencesManager.addWhitelistedSource(sourcePkg)
                         RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(targetPkg)
                         recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.ALLOWED)
+                        try {
+                            val launchIntent = packageManager.getLaunchIntentForPackage(targetPkg)
+                            if (launchIntent != null) {
+                                startActivity(launchIntent)
+                            }
+                        } catch (e: Exception) {
+                            // ignore
+                        }
                         finish()
                     }
                 )
@@ -317,7 +332,7 @@ fun ConfirmationPromptScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Do you want to continue to $targetName or return to $sourceName?",
+                    text = "Do you want to continue to $targetName or stay in $sourceName?",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -341,7 +356,7 @@ fun ConfirmationPromptScreen(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Return to Previous App ($secondsRemaining s)")
+                    Text(text = "Stay in $sourceName ($secondsRemaining s)")
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

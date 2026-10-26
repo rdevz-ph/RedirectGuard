@@ -60,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rdevzph.redirectguard.model.AccessibilityHealthState
 import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
 import com.rdevzph.redirectguard.model.RedirectAction
@@ -88,6 +89,7 @@ fun MainScreen(
     val recentRedirects by viewModel.recentRedirects.collectAsState()
 
     val isAccessibilityActive by viewModel.isAccessibilityActive.collectAsState()
+    val accessibilityHealth by viewModel.accessibilityHealth.collectAsState()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsState()
     val isShizukuInstalled by viewModel.isShizukuInstalled.collectAsState()
     val isShizukuRunning by viewModel.isShizukuRunning.collectAsState()
@@ -227,17 +229,76 @@ fun MainScreen(
                 )
             }
 
-            // Accessibility Service Card
+            // Accessibility Service Health Card
             item {
-                StatusCard(
-                    icon = Icons.Default.AccessibilityNew,
-                    title = "Accessibility Service",
-                    statusText = if (isAccessibilityActive) "Active" else "Action Needed",
-                    isSuccess = isAccessibilityActive,
-                    description = "Monitors app window transitions to detect when an ad triggers an external shopping application. Does not read screen text or private data.",
-                    actionButtonText = if (!isAccessibilityActive) "Enable in Settings" else null,
-                    onActionClick = { viewModel.openAccessibilitySettings() }
-                )
+                val hasShizukuPrivilege = isShizukuRunning && isShizukuAuthorized
+                when (accessibilityHealth) {
+                    AccessibilityHealthState.HEALTHY -> {
+                        StatusCard(
+                            icon = Icons.Default.AccessibilityNew,
+                            title = "Accessibility Service",
+                            statusText = "Active & Healthy",
+                            isSuccess = true,
+                            description = "Monitors app window transitions to detect unwanted redirects. Running normally.",
+                            secondaryButtonText = "Open App Info",
+                            onSecondaryActionClick = { viewModel.openAppInfoSettings() }
+                        )
+                    }
+                    AccessibilityHealthState.KILLED_DESYNCED -> {
+                        StatusCard(
+                            icon = Icons.Default.AccessibilityNew,
+                            title = "Accessibility Service",
+                            statusText = "Killed / Desynced",
+                            isSuccess = false,
+                            statusBgOverride = StatusInactiveContainer,
+                            statusFgOverride = StatusInactive,
+                            description = "Android cached a dead service state after killing the process. Toggling settings alone will not restart it. Use Force Stop via Shizuku or App Info to purge the cache and restore the service.",
+                            actionButtonText = if (hasShizukuPrivilege) "Force Stop & Recover (Shizuku)" else "Open App Info (Force Stop)",
+                            onActionClick = {
+                                if (hasShizukuPrivilege) {
+                                    viewModel.recoverAccessibilityViaShizuku()
+                                } else {
+                                    viewModel.openAppInfoSettings()
+                                }
+                            },
+                            secondaryButtonText = if (hasShizukuPrivilege) "Open App Info" else "Accessibility Settings",
+                            onSecondaryActionClick = {
+                                if (hasShizukuPrivilege) {
+                                    viewModel.openAppInfoSettings()
+                                } else {
+                                    viewModel.openAccessibilitySettings()
+                                }
+                            },
+                            tertiaryButtonText = if (hasShizukuPrivilege) "Force Stop App (Shizuku)" else if (isShizukuRunning) "Authorize Shizuku for Force Stop Recovery" else null,
+                            onTertiaryActionClick = {
+                                if (hasShizukuPrivilege) {
+                                    viewModel.forceStopAppViaShizuku()
+                                } else if (isShizukuRunning) {
+                                    viewModel.requestShizukuPermission()
+                                }
+                            }
+                        )
+                    }
+                    AccessibilityHealthState.DISABLED -> {
+                        StatusCard(
+                            icon = Icons.Default.AccessibilityNew,
+                            title = "Accessibility Service",
+                            statusText = "Not Running",
+                            isSuccess = false,
+                            description = "Required to detect app transitions when an ad triggers an external shopping application. Does not read screen text or private data.",
+                            actionButtonText = if (hasShizukuPrivilege) "1-Tap Enable (Shizuku)" else "Enable in Settings",
+                            onActionClick = {
+                                if (hasShizukuPrivilege) {
+                                    viewModel.enableAccessibilityViaShizuku()
+                                } else {
+                                    viewModel.openAccessibilitySettings()
+                                }
+                            },
+                            secondaryButtonText = "Open App Info",
+                            onSecondaryActionClick = { viewModel.openAppInfoSettings() }
+                        )
+                    }
+                }
             }
 
             // Overlay Permission Card

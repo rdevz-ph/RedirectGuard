@@ -86,6 +86,23 @@ class ShizukuHelper(private val context: Context) {
     }
 
     /**
+     * Executes a shell command via Shizuku binder reflection.
+     */
+    fun executeCommand(cmd: Array<String>): Pair<Int, String> {
+        val method = Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java,
+            Array<String>::class.java,
+            String::class.java
+        )
+        method.isAccessible = true
+        val process = method.invoke(null, cmd, null, null) as java.lang.Process
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val exitCode = process.waitFor()
+        return Pair(exitCode, output)
+    }
+
+    /**
      * Attempts to grant SYSTEM_ALERT_WINDOW via Shizuku shell.
      * Returns true if the command executed without error.
      */
@@ -93,7 +110,44 @@ class ShizukuHelper(private val context: Context) {
         if (!_isPermissionGranted.value) return false
         return try {
             val pkg = context.packageName
-            val cmd = arrayOf("pm", "grant", pkg, "android.permission.SYSTEM_ALERT_WINDOW")
+            val (exitCode, _) = executeCommand(arrayOf("pm", "grant", pkg, "android.permission.SYSTEM_ALERT_WINDOW"))
+            Log.d(TAG, "Grant overlay exit code: $exitCode")
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error granting overlay via Shizuku", e)
+            false
+        }
+    }
+
+    /**
+     * Completely recovers the accessibility service by:
+     * 1. Clearing our entry from enabled_accessibility_services.
+     * 2. Force stopping the app via `am force-stop` to purge Android's cached dead binder.
+     * 3. Waiting 1 second for system server cleanup.
+     * 4. Re-enabling the service entry in secure settings.
+     * 5. Relaunching the app.
+     */
+    fun forceStopAndRecoverAccessibility(componentName: String): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val pkg = context.packageName
+            val (_, currentServices) = executeCommand(
+                arrayOf("settings", "get", "secure", "enabled_accessibility_services")
+            )
+            val cleaned = currentServices.trim().split(":")
+                .filter { it.isNotBlank() && !it.contains(pkg) }
+                .joinToString(":")
+            val disableVal = if (cleaned.isBlank() || cleaned == "null") "null" else cleaned
+            val reEnabled = if (cleaned.isBlank() || cleaned == "null") componentName else "$cleaned:$componentName"
+
+            val script = "settings put secure enabled_accessibility_services \"$disableVal\"\n" +
+                    "am force-stop \"$pkg\"\n" +
+                    "sleep 1\n" +
+                    "settings put secure enabled_accessibility_services \"$reEnabled\"\n" +
+                    "settings put secure accessibility_enabled 1\n" +
+                    "sleep 1\n" +
+                    "am start -n \"$pkg/$pkg.MainActivity\"\n"
+
             val method = Shizuku::class.java.getDeclaredMethod(
                 "newProcess",
                 Array<String>::class.java,
@@ -101,12 +155,72 @@ class ShizukuHelper(private val context: Context) {
                 String::class.java
             )
             method.isAccessible = true
-            val process = method.invoke(null, cmd, null, null) as java.lang.Process
-            val exitCode = process.waitFor()
-            Log.d(TAG, "Grant overlay exit code: $exitCode")
+            method.invoke(null, arrayOf("sh", "-c", script), null, null)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error force stopping and recovering via Shizuku", e)
+            false
+        }
+    }
+
+    /**
+     * Enables the accessibility service via Shizuku cleanly without force stopping the app.
+     */
+    fun enableAccessibilityService(componentName: String): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val (_, currentServices) = executeCommand(
+                arrayOf("settings", "get", "secure", "enabled_accessibility_services")
+            )
+            val trimmed = currentServices.trim()
+            val list = trimmed.split(":").filter { it.isNotBlank() && it != "null" }.toMutableList()
+            if (!list.contains(componentName)) {
+                list.add(componentName)
+            }
+            val newServices = list.joinToString(":")
+            val (exitCode, _) = executeCommand(
+                arrayOf("settings", "put", "secure", "enabled_accessibility_services", newServices)
+            )
+            executeCommand(arrayOf("settings", "put", "secure", "accessibility_enabled", "1"))
             exitCode == 0
         } catch (e: Exception) {
-            Log.e(TAG, "Error granting overlay via Shizuku", e)
+            Log.e(TAG, "Error enabling accessibility service via Shizuku", e)
+            false
+        }
+    }
+
+    /**
+     * Clears our accessibility service entry from secure settings.
+     */
+    fun disableAccessibilityService(): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val (_, currentServices) = executeCommand(
+                arrayOf("settings", "get", "secure", "enabled_accessibility_services")
+            )
+            val cleaned = currentServices.trim().split(":")
+                .filter { it.isNotBlank() && !it.contains(context.packageName) }
+                .joinToString(":")
+            val (exitCode, _) = executeCommand(
+                arrayOf("settings", "put", "secure", "enabled_accessibility_services", cleaned.ifEmpty { "null" })
+            )
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing accessibility service via Shizuku", e)
+            false
+        }
+    }
+
+    /**
+     * Force stops this application using Shizuku shell to clear bad states if needed.
+     */
+    fun forceStopApp(): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val (exitCode, _) = executeCommand(arrayOf("am", "force-stop", context.packageName))
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error force stopping app via Shizuku", e)
             false
         }
     }

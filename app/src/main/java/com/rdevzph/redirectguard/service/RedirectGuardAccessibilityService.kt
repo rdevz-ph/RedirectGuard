@@ -122,7 +122,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 ).show()
             }
         } else {
-            // Prompt confirmation mode
+            // Confirmation mode:
+            // Immediately bounce back to cancel the target app and abort deep link execution
+            performGlobalAction(GLOBAL_ACTION_BACK)
+
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -135,16 +138,19 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             )
             prefs.addRedirectRecord(record)
 
-            val intent = Intent(this, RedirectConfirmationActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
-                putExtra(RedirectConfirmationActivity.EXTRA_SOURCE_PKG, sourcePkg)
-                putExtra(RedirectConfirmationActivity.EXTRA_TARGET_PKG, targetPkg)
-                putExtra(RedirectConfirmationActivity.EXTRA_SOURCE_NAME, sourceName)
-                putExtra(RedirectConfirmationActivity.EXTRA_TARGET_NAME, targetName)
-            }
-            startActivity(intent)
+            // Launch prompt over source app after brief pause so GLOBAL_ACTION_BACK completes
+            mainHandler.postDelayed({
+                val intent = Intent(this, RedirectConfirmationActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                    putExtra(RedirectConfirmationActivity.EXTRA_SOURCE_PKG, sourcePkg)
+                    putExtra(RedirectConfirmationActivity.EXTRA_TARGET_PKG, targetPkg)
+                    putExtra(RedirectConfirmationActivity.EXTRA_SOURCE_NAME, sourceName)
+                    putExtra(RedirectConfirmationActivity.EXTRA_TARGET_NAME, targetName)
+                }
+                startActivity(intent)
+            }, 200L)
         }
     }
 
@@ -216,14 +222,34 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         var instance: RedirectGuardAccessibilityService? = null
             private set
 
-        fun isAccessibilityEnabled(context: Context): Boolean {
-            if (_isServiceActive.value && instance != null) return true
-            val expectedService = "${context.packageName}/${RedirectGuardAccessibilityService::class.java.name}"
+        fun getServiceComponentName(context: Context): String {
+            return "${context.packageName}/${RedirectGuardAccessibilityService::class.java.name}"
+        }
+
+        fun getServiceHealth(context: Context): com.rdevzph.redirectguard.model.AccessibilityHealthState {
+            val isRunning = _isServiceActive.value && instance != null
+            val isSettingOn = isAccessibilitySettingEnabled(context)
+            return when {
+                isRunning -> com.rdevzph.redirectguard.model.AccessibilityHealthState.HEALTHY
+                isSettingOn -> com.rdevzph.redirectguard.model.AccessibilityHealthState.KILLED_DESYNCED
+                else -> com.rdevzph.redirectguard.model.AccessibilityHealthState.DISABLED
+            }
+        }
+
+        fun isAccessibilitySettingEnabled(context: Context): Boolean {
+            val expectedService = getServiceComponentName(context)
+            val shortExpectedService = "${context.packageName}/.service.RedirectGuardAccessibilityService"
             val enabledServices = android.provider.Settings.Secure.getString(
                 context.contentResolver,
                 android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             ) ?: return false
-            return enabledServices.split(":").any { it.equals(expectedService, ignoreCase = true) }
+            return enabledServices.split(":").any {
+                it.equals(expectedService, ignoreCase = true) || it.equals(shortExpectedService, ignoreCase = true)
+            }
+        }
+
+        fun isAccessibilityEnabled(context: Context): Boolean {
+            return _isServiceActive.value && instance != null
         }
     }
 }

@@ -44,6 +44,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isAccessibilityActive: StateFlow<Boolean> =
         RedirectGuardAccessibilityService.isServiceActive
 
+    private val _accessibilityHealth = MutableStateFlow(
+        RedirectGuardAccessibilityService.getServiceHealth(application)
+    )
+    val accessibilityHealth: StateFlow<com.rdevzph.redirectguard.model.AccessibilityHealthState> =
+        _accessibilityHealth.asStateFlow()
+
     val isShizukuInstalled: StateFlow<Boolean> = shizuku.isShizukuInstalled
     val isShizukuRunning: StateFlow<Boolean> = shizuku.isShizukuRunning
     val isShizukuAuthorized: StateFlow<Boolean> = shizuku.isPermissionGranted
@@ -65,6 +71,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshStatus() {
         shizuku.refreshStatus()
         _canDrawOverlays.value = checkCanDrawOverlays()
+        _accessibilityHealth.value = RedirectGuardAccessibilityService.getServiceHealth(getApplication())
     }
 
     fun toggleGuard(enabled: Boolean) {
@@ -105,9 +112,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return success
     }
 
+    fun recoverAccessibilityViaShizuku() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val component = RedirectGuardAccessibilityService.getServiceComponentName(getApplication())
+            shizuku.forceStopAndRecoverAccessibility(component)
+            withContext(Dispatchers.Main) {
+                refreshStatus()
+            }
+        }
+    }
+
+    fun enableAccessibilityViaShizuku() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val component = RedirectGuardAccessibilityService.getServiceComponentName(getApplication())
+            shizuku.enableAccessibilityService(component)
+            Thread.sleep(350)
+            withContext(Dispatchers.Main) {
+                refreshStatus()
+            }
+        }
+    }
+
+    fun clearAccessibilityEntriesViaShizuku() {
+        viewModelScope.launch(Dispatchers.IO) {
+            shizuku.disableAccessibilityService()
+            withContext(Dispatchers.Main) {
+                refreshStatus()
+            }
+        }
+    }
+
+    fun forceStopAppViaShizuku() {
+        viewModelScope.launch(Dispatchers.IO) {
+            shizuku.forceStopApp()
+        }
+    }
+
     fun openAccessibilitySettings() {
         val context = getApplication<Application>()
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    }
+
+    fun openAppInfoSettings() {
+        val context = getApplication<Application>()
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:${context.packageName}")
+        ).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)

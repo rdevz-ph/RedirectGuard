@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -20,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,10 +43,14 @@ fun StatusCard(
     onActionClick: (() -> Unit)? = null,
     secondaryButtonText: String? = null,
     onSecondaryActionClick: (() -> Unit)? = null,
+    tertiaryButtonText: String? = null,
+    onTertiaryActionClick: (() -> Unit)? = null,
+    statusBgOverride: Color? = null,
+    statusFgOverride: Color? = null,
     modifier: Modifier = Modifier
 ) {
-    val statusBg = if (isSuccess) StatusActiveContainer else StatusWarningContainer
-    val statusFg = if (isSuccess) StatusActive else StatusWarning
+    val statusBg = statusBgOverride ?: if (isSuccess) StatusActiveContainer else StatusWarningContainer
+    val statusFg = statusFgOverride ?: if (isSuccess) StatusActive else StatusWarning
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -73,7 +77,7 @@ fun StatusCard(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = statusFg,
                         modifier = Modifier
                             .padding(8.dp)
                             .size(24.dp)
@@ -114,21 +118,25 @@ fun StatusCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (actionButtonText != null && onActionClick != null) {
+            if ((actionButtonText != null && onActionClick != null) ||
+                (secondaryButtonText != null && onSecondaryActionClick != null)
+            ) {
                 Spacer(modifier = Modifier.height(14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
-                        onClick = onActionClick,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = actionButtonText,
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                    if (actionButtonText != null && onActionClick != null) {
+                        Button(
+                            onClick = onActionClick,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = actionButtonText,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
 
                     if (secondaryButtonText != null && onSecondaryActionClick != null) {
@@ -142,6 +150,19 @@ fun StatusCard(
                             )
                         }
                     }
+                }
+            }
+
+            if (tertiaryButtonText != null && onTertiaryActionClick != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                TextButton(
+                    onClick = onTertiaryActionClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = tertiaryButtonText,
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
             }
         }

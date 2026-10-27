@@ -70,6 +70,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isIgnoringBatteryOptimizations = MutableStateFlow(checkIgnoringBatteryOptimizations())
     val isIgnoringBatteryOptimizations: StateFlow<Boolean> = _isIgnoringBatteryOptimizations.asStateFlow()
 
+    val hasCompletedSetup: StateFlow<Boolean> = prefs.hasCompletedSetup
+
+    private val _isAllRequirementsMet = MutableStateFlow(false)
+    val isAllRequirementsMet: StateFlow<Boolean> = _isAllRequirementsMet.asStateFlow()
+
     private val _installedApps = MutableStateFlow<List<InstalledAppItem>>(emptyList())
     val installedApps: StateFlow<List<InstalledAppItem>> = _installedApps.asStateFlow()
 
@@ -88,6 +93,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _accessibilityHealth.value = RedirectGuardAccessibilityService.getServiceHealth(getApplication())
         _areNotificationsEnabled.value = androidx.core.app.NotificationManagerCompat.from(getApplication()).areNotificationsEnabled()
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(getApplication())
+
+        val shizukuReady = shizuku.isShizukuRunning.value && shizuku.isPermissionGranted.value
+        val accessibilityReady = _accessibilityHealth.value != com.rdevzph.redirectguard.model.AccessibilityHealthState.DISABLED
+        val overlayReady = _canDrawOverlays.value
+        val notificationsReady = _areNotificationsEnabled.value
+        val batteryReady = _isIgnoringBatteryOptimizations.value
+
+        _isAllRequirementsMet.value = shizukuReady && accessibilityReady && overlayReady && notificationsReady && batteryReady
+    }
+
+    fun setSetupCompleted(completed: Boolean) {
+        prefs.setSetupCompleted(completed)
     }
 
     fun toggleGuard(enabled: Boolean) {
@@ -159,8 +176,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun grantOverlayViaShizuku(): Boolean {
         val success = shizuku.grantOverlayPermission()
-        _canDrawOverlays.value = checkCanDrawOverlays()
+        refreshStatus()
         return success
+    }
+
+    fun grantNotificationViaShizuku(): Boolean {
+        val success = shizuku.grantNotificationPermission()
+        refreshStatus()
+        return success
+    }
+
+    fun enableAllRequirementsViaShizuku() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val component = RedirectGuardAccessibilityService.getServiceComponentName(getApplication())
+            shizuku.enableAccessibilityService(component)
+            shizuku.grantOverlayPermission()
+            shizuku.grantNotificationPermission()
+            shizuku.whitelistBatteryOptimization()
+            Thread.sleep(400)
+            withContext(Dispatchers.Main) {
+                refreshStatus()
+            }
+        }
     }
 
     fun enableAccessibilityViaShizuku() {
@@ -265,7 +302,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun whitelistBatteryOptimizationViaShizuku(): Boolean {
         val success = shizuku.whitelistBatteryOptimization()
-        _isIgnoringBatteryOptimizations.value = checkIgnoringBatteryOptimizations()
+        refreshStatus()
         return success
     }
 

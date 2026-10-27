@@ -73,55 +73,64 @@ import com.rdevzph.redirectguard.ui.theme.RedirectGuardTheme
 import com.rdevzph.redirectguard.ui.theme.StatusInactive
 import java.util.UUID
 
+data class PromptData(
+    val sourcePkg: String,
+    val targetPkg: String,
+    val sourceName: String,
+    val targetName: String,
+    val deepLinkUri: String?,
+    val sourceIcon: Drawable?,
+    val targetIcon: Drawable?
+)
+
 class RedirectConfirmationActivity : ComponentActivity() {
 
     private var isAllowedByUser = false
+    private var promptData by mutableStateOf<PromptData?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val sourcePkg = intent.getStringExtra(EXTRA_SOURCE_PKG) ?: "Unknown"
-        val targetPkg = intent.getStringExtra(EXTRA_TARGET_PKG) ?: "Unknown"
-        val sourceName = intent.getStringExtra(EXTRA_SOURCE_NAME) ?: sourcePkg
-        val targetName = intent.getStringExtra(EXTRA_TARGET_NAME) ?: targetPkg
-        val deepLinkUri = intent.getStringExtra(EXTRA_DEEP_LINK_URI)
-
-        val sourceIcon = getAppIcon(sourcePkg)
-        val targetIcon = getAppIcon(targetPkg)
+        updateFromIntent(intent)
 
         val blockAction = {
-            recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.BLOCKED, deepLinkUri)
-            RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
-            RedirectGuardAccessibilityService.instance?.bringPackageToFront(sourcePkg)
+            val current = promptData
+            if (current != null) {
+                recordAction(current.sourcePkg, current.targetPkg, current.sourceName, current.targetName, RedirectAction.BLOCKED, current.deepLinkUri)
+                RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(current.targetPkg)
+                RedirectGuardAccessibilityService.instance?.bringPackageToFront(current.sourcePkg)
+            }
             finish()
         }
 
         val openTargetAction = {
-            isAllowedByUser = true
-            RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(targetPkg)
-            recordAction(sourcePkg, targetPkg, sourceName, targetName, RedirectAction.ALLOWED, deepLinkUri)
-            try {
-                val targetIntent = if (!deepLinkUri.isNullOrBlank()) {
-                    Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUri)).apply {
-                        setPackage(targetPkg)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            val current = promptData
+            if (current != null) {
+                isAllowedByUser = true
+                RedirectGuardAccessibilityService.instance?.allowTargetTemporarily(current.targetPkg, current.sourcePkg)
+                recordAction(current.sourcePkg, current.targetPkg, current.sourceName, current.targetName, RedirectAction.ALLOWED, current.deepLinkUri)
+                try {
+                    val targetIntent = if (!current.deepLinkUri.isNullOrBlank()) {
+                        Intent(Intent.ACTION_VIEW, Uri.parse(current.deepLinkUri)).apply {
+                            setPackage(current.targetPkg)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                    } else {
+                        packageManager.getLaunchIntentForPackage(current.targetPkg)
                     }
-                } else {
-                    packageManager.getLaunchIntentForPackage(targetPkg)
-                }
 
-                if (targetIntent != null) {
-                    try {
-                        startActivity(targetIntent)
-                    } catch (e: Exception) {
-                        val fallback = packageManager.getLaunchIntentForPackage(targetPkg)
-                        if (fallback != null) {
-                            startActivity(fallback)
+                    if (targetIntent != null) {
+                        try {
+                            startActivity(targetIntent)
+                        } catch (e: Exception) {
+                            val fallback = packageManager.getLaunchIntentForPackage(current.targetPkg)
+                            if (fallback != null) {
+                                startActivity(fallback)
+                            }
                         }
                     }
+                } catch (e: Exception) {
+                    // ignore
                 }
-            } catch (e: Exception) {
-                // ignore
             }
             finish()
         }
@@ -132,23 +141,50 @@ class RedirectConfirmationActivity : ComponentActivity() {
 
         setContent {
             RedirectGuardTheme {
-                ConfirmationPromptScreen(
-                    sourcePkg = sourcePkg,
-                    targetPkg = targetPkg,
-                    sourceName = sourceName,
-                    targetName = targetName,
-                    deepLinkUri = deepLinkUri,
-                    sourceIcon = sourceIcon,
-                    targetIcon = targetIcon,
-                    onBlock = blockAction,
-                    onAllow = openTargetAction,
-                    onAlwaysAllowSource = {
-                        RedirectGuardApplication.instance.preferencesManager.addWhitelistedSource(sourcePkg)
-                        openTargetAction()
-                    }
-                )
+                val data = promptData
+                if (data != null) {
+                    ConfirmationPromptScreen(
+                        sourcePkg = data.sourcePkg,
+                        targetPkg = data.targetPkg,
+                        sourceName = data.sourceName,
+                        targetName = data.targetName,
+                        deepLinkUri = data.deepLinkUri,
+                        sourceIcon = data.sourceIcon,
+                        targetIcon = data.targetIcon,
+                        onBlock = blockAction,
+                        onAllow = openTargetAction,
+                        onAlwaysAllowSource = {
+                            RedirectGuardApplication.instance.preferencesManager.addWhitelistedSource(data.sourcePkg)
+                            openTargetAction()
+                        }
+                    )
+                }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        isAllowedByUser = false
+        updateFromIntent(intent)
+    }
+
+    private fun updateFromIntent(intent: Intent) {
+        val sourcePkg = intent.getStringExtra(EXTRA_SOURCE_PKG) ?: "Unknown"
+        val targetPkg = intent.getStringExtra(EXTRA_TARGET_PKG) ?: "Unknown"
+        val sourceName = intent.getStringExtra(EXTRA_SOURCE_NAME) ?: sourcePkg
+        val targetName = intent.getStringExtra(EXTRA_TARGET_NAME) ?: targetPkg
+        val deepLinkUri = intent.getStringExtra(EXTRA_DEEP_LINK_URI)
+        promptData = PromptData(
+            sourcePkg = sourcePkg,
+            targetPkg = targetPkg,
+            sourceName = sourceName,
+            targetName = targetName,
+            deepLinkUri = deepLinkUri,
+            sourceIcon = getAppIcon(sourcePkg),
+            targetIcon = getAppIcon(targetPkg)
+        )
     }
 
     private fun getAppIcon(packageName: String): Drawable? {
@@ -184,7 +220,7 @@ class RedirectConfirmationActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         if (!isAllowedByUser && !isFinishing) {
-            val targetPkg = intent.getStringExtra(EXTRA_TARGET_PKG)
+            val targetPkg = promptData?.targetPkg ?: intent.getStringExtra(EXTRA_TARGET_PKG)
             if (!targetPkg.isNullOrBlank()) {
                 RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
             }
@@ -213,9 +249,9 @@ fun ConfirmationPromptScreen(
     onAllow: () -> Unit,
     onAlwaysAllowSource: () -> Unit
 ) {
-    var secondsRemaining by remember { mutableIntStateOf(15) }
+    var secondsRemaining by remember(targetPkg, sourcePkg) { mutableIntStateOf(15) }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(targetPkg, sourcePkg) {
         val timer = object : CountDownTimer(15000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 secondsRemaining = (millisUntilFinished / 1000).toInt()

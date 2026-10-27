@@ -14,11 +14,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.rdevzph.redirectguard.ui.MainScreen
 import com.rdevzph.redirectguard.ui.MainViewModel
 import com.rdevzph.redirectguard.ui.theme.RedirectGuardTheme
+import com.rdevzph.redirectguard.ui.wizard.SetupWizardScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -36,10 +42,29 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             RedirectGuardTheme {
-                MainScreen(
-                    viewModel = viewModel,
-                    modifier = Modifier.fillMaxSize()
-                )
+                val isAllRequirementsMet by viewModel.isAllRequirementsMet.collectAsState()
+                val hasCompletedSetup by viewModel.hasCompletedSetup.collectAsState()
+                var manuallyOpenedWizard by remember { mutableStateOf(false) }
+
+                if (!isAllRequirementsMet || !hasCompletedSetup || manuallyOpenedWizard) {
+                    SetupWizardScreen(
+                        viewModel = viewModel,
+                        canDismiss = isAllRequirementsMet && hasCompletedSetup,
+                        onComplete = {
+                            if (isAllRequirementsMet) {
+                                viewModel.setSetupCompleted(true)
+                                manuallyOpenedWizard = false
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    MainScreen(
+                        viewModel = viewModel,
+                        onOpenSetupWizard = { manuallyOpenedWizard = true },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

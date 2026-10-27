@@ -27,8 +27,6 @@ import java.util.UUID
 class RedirectGuardAccessibilityService : AccessibilityService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var lastActiveSourcePackage: String? = null
-    private var lastTransitionTime: Long = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -45,6 +43,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
         val className = event.className?.toString()
+        Log.w(TAG, "onAccessibilityEvent: pkg=$packageName, class=$className, currentSource=$lastActiveSourcePackage")
 
         // 1. Ignore our own app UI (confirmation prompt and main screen)
         if (packageName == applicationContext.packageName) {
@@ -57,7 +56,23 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         }
 
         // 3. Handle Home Launcher: update source tracking so launches from home are never blocked
-        if (isLauncherPackage(packageName)) {
+        if (isLauncherPackage(this, packageName)) {
+            val activeWindowPkg = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
+            val nowTime = SystemClock.uptimeMillis()
+            val isRecentTrailingEvent = (nowTime - lastAppActiveTime < 1500L) &&
+                    lastAppActivePackage != null &&
+                    !isLauncherPackage(this, lastAppActivePackage)
+
+            if (activeWindowPkg != null && !isLauncherPackage(this, activeWindowPkg)) {
+                Log.d(TAG, "Ignoring launcher event because active window is $activeWindowPkg: $packageName")
+                return
+            }
+
+            if (isRecentTrailingEvent && (activeWindowPkg == null || !isLauncherPackage(this, activeWindowPkg))) {
+                Log.d(TAG, "Ignoring trailing launcher event after returning to $lastAppActivePackage: $packageName")
+                return
+            }
+
             Log.d(TAG, "User active on Home Launcher: $packageName")
             lastActiveSourcePackage = packageName
             return
@@ -65,8 +80,8 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         val prefs = RedirectGuardApplication.instance.preferencesManager
 
-        // 4. Whitelist system apps: system utilities like Settings, App Info are never shopping apps
-        if (prefs.whitelistSystemApps.value && isSystemApp(packageName) && !isBrowserApp(packageName)) {
+        // 4. Whitelist system utilities: Settings, App Info, etc. (OEM pre-installed guarded apps are never system utilities)
+        if (isSystemUtility(packageName, prefs)) {
             Log.d(TAG, "User active in system utility: $packageName")
             lastActiveSourcePackage = packageName
             return
@@ -74,37 +89,82 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         val now = SystemClock.uptimeMillis()
 
-        // 5. Active suppression guard: if a recently intercepted target attempts to re-appear
+        // 5. Ignore trailing exit events from recently allowed target packages when returning to previous app
+        if (recentlyAllowedPackage != null && packageName == recentlyAllowedPackage && now < recentlyAllowedUntil) {
+            Log.d(TAG, "Ignoring trailing exit event from recently allowed target: $packageName")
+            return
+        }
+
+        // 6. Handle user returning to the originating app from an allowed redirect
+        if (originatingSourcePackage != null && packageName == originatingSourcePackage) {
+            Log.d(TAG, "User returned to originating app: $packageName (allowed was $allowedTargetPackage)")
+            recentlyAllowedPackage = allowedTargetPackage
+            recentlyAllowedUntil = now + 3000L
+            allowedTargetPackage = null
+            allowedTargetUntil = 0L
+            originatingSourcePackage = null
+            lastActiveSourcePackage = packageName
+            lastAppActivePackage = packageName
+            lastAppActiveTime = now
+            return
+        }
+
+        // 7. Explicitly allowed target is active
+        if (allowedTargetPackage != null && packageName == allowedTargetPackage && now < allowedTargetUntil) {
+            Log.d(TAG, "Allowed target package is active: $packageName")
+            lastActiveSourcePackage = packageName
+            lastAppActivePackage = packageName
+            lastAppActiveTime = now
+            return
+        }
+
+        // 8. Active suppression guard: if a recently intercepted target attempts to re-appear
         // (via ad retry, secondary trampoline activity, or background intent), kill it immediately.
         if (activeGuardedTargetPackage == packageName && now < activeGuardedTargetUntil) {
-            val isExplicitlyAllowed = allowedTargetPackage == packageName &&
-                    (now - allowedTargetTimestamp) < ALLOW_WINDOW_MS
+            val isExplicitlyAllowed = allowedTargetPackage == packageName && now < allowedTargetUntil
             if (!isExplicitlyAllowed && !prefs.isPackageWhitelisted(packageName)) {
                 Log.w(TAG, "Active suppression: killing escape attempt by $packageName")
                 RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(packageName)
-                if (lastActiveSourcePackage != null) {
+                if (prefs.interceptionMode.value == InterceptionMode.AUTO_RETURN && lastActiveSourcePackage != null) {
                     bringPackageToFront(lastActiveSourcePackage!!)
                 }
                 return
             }
         }
 
+        // Resolve source package, falling back to activity stack inspection if null or if launcher was incorrectly recorded
+        var effectiveSource = lastActiveSourcePackage
+        val isGuarded = !prefs.isPackageWhitelisted(packageName) &&
+                (prefs.guardAllExternalApps.value || prefs.guardedPackages.value.contains(packageName))
+
+        // If effectiveSource is missing or is launcher, verify via Shizuku dumpsys whether an app was actually paused
+        if (isGuarded && (effectiveSource == null || isLauncherPackage(this, effectiveSource))) {
+            val verifiedSource = RedirectGuardApplication.instance.shizukuHelper.getPreviousForegroundPackage(packageName)
+            if (verifiedSource != null) {
+                Log.d(TAG, "Corrected effectiveSource from '$effectiveSource' to '$verifiedSource' via dumpsys")
+                effectiveSource = verifiedSource
+                lastActiveSourcePackage = verifiedSource
+                lastAppActivePackage = verifiedSource
+                lastAppActiveTime = now
+            }
+        }
+
         // Detect if user launched directly from their home launcher or a system utility
-        val isFromLauncher = lastActiveSourcePackage != null && isLauncherPackage(lastActiveSourcePackage)
-        val isFromSystemUI = lastActiveSourcePackage != null && isSystemUIPackage(lastActiveSourcePackage)
-        val isFromSystemUtility = lastActiveSourcePackage != null &&
-                prefs.whitelistSystemApps.value &&
-                isSystemApp(lastActiveSourcePackage!!) &&
-                !isBrowserApp(lastActiveSourcePackage!!)
+        val isFromLauncher = effectiveSource != null && isLauncherPackage(this, effectiveSource)
+        val isFromSystemUI = effectiveSource != null && isSystemUIPackage(effectiveSource)
+        val isFromSystemUtility = effectiveSource != null && isSystemUtility(effectiveSource, prefs)
 
         // Check if transition to a new external package
-        if (lastActiveSourcePackage != null && lastActiveSourcePackage != packageName) {
-            val isGuarded = !prefs.isPackageWhitelisted(packageName) &&
-                    (prefs.guardAllExternalApps.value || prefs.guardedPackages.value.contains(packageName))
+        if (effectiveSource != null && effectiveSource != packageName) {
+            val isWhitelisted = prefs.isPackageWhitelisted(effectiveSource)
+            val isExplicitlyAllowed = allowedTargetPackage == packageName && now < allowedTargetUntil
 
-            val isWhitelisted = prefs.isPackageWhitelisted(lastActiveSourcePackage)
-            val isExplicitlyAllowed = allowedTargetPackage == packageName &&
-                    (now - allowedTargetTimestamp) < ALLOW_WINDOW_MS
+            // Sanity check: If active window is still the source app (e.g. background/closing event), do not intercept
+            val activeWindowPkg = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
+            if (activeWindowPkg != null && activeWindowPkg == effectiveSource && activeWindowPkg != packageName) {
+                Log.d(TAG, "Target $packageName is not active window (active is $activeWindowPkg), ignoring")
+                return
+            }
 
             // Only intercept if:
             // - Guard is enabled
@@ -123,7 +183,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
             Log.w(
                 TAG,
-                "Check: src=$lastActiveSourcePackage -> target=$packageName | guarded=$isGuarded | whitelisted=$isWhitelisted | allowed=$isExplicitlyAllowed | fromLauncher=$isFromLauncher | fromSysUI=$isFromSystemUI | fromSysUtil=$isFromSystemUtility ==> shouldIntercept=$shouldIntercept"
+                "Check: src=$effectiveSource -> target=$packageName | guarded=$isGuarded | whitelisted=$isWhitelisted | allowed=$isExplicitlyAllowed | fromLauncher=$isFromLauncher | fromSysUI=$isFromSystemUI | fromSysUtil=$isFromSystemUtility ==> shouldIntercept=$shouldIntercept"
             )
 
             if (shouldIntercept) {
@@ -131,18 +191,20 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 activeGuardedTargetPackage = packageName
                 activeGuardedTargetUntil = now + ACTIVE_SUPPRESSION_WINDOW_MS
                 handleInterceptedRedirect(
-                    sourcePkg = lastActiveSourcePackage!!,
+                    sourcePkg = effectiveSource,
                     targetPkg = packageName,
                     prefs = prefs
                 )
                 // Crucial: Do not update lastActiveSourcePackage to the guarded target package
-                // so subsequent ad triggers correctly recognize sourcePkg as the active source app.
+                // so subsequent ad triggers correctly recognize effectiveSource as the active source app.
                 return
             }
         }
 
         // Update tracking state
         lastActiveSourcePackage = packageName
+        lastAppActivePackage = packageName
+        lastAppActiveTime = now
     }
 
     private fun handleInterceptedRedirect(
@@ -166,11 +228,11 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         // Immediately force stop target package via Shizuku shell to prevent it from escaping or continuing activities
         val killed = RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
         Log.d(TAG, "Force stop via Shizuku for $targetPkg: killed=$killed")
-        bringPackageToFront(sourcePkg)
 
         val mode = prefs.interceptionMode.value
 
         if (mode == InterceptionMode.AUTO_RETURN) {
+            bringPackageToFront(sourcePkg)
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -218,8 +280,8 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             )
             prefs.addRedirectRecord(record)
 
-            // Launch prompt over source app
-            mainHandler.postDelayed({
+            // Launch prompt over source app without bringPackageToFront racing against it
+            mainHandler.post {
                 val intent = Intent(this, RedirectConfirmationActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                             Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -231,7 +293,7 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                     putExtra(RedirectConfirmationActivity.EXTRA_DEEP_LINK_URI, deepLinkUri)
                 }
                 startActivity(intent)
-            }, 100L)
+            }
 
             com.rdevzph.redirectguard.notification.NotificationHelper.postInterceptedNotification(
                 context = applicationContext,
@@ -257,45 +319,28 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
     }
 
 
-    fun allowTargetTemporarily(packageName: String) {
-        allowedTargetPackage = packageName
-        allowedTargetTimestamp = SystemClock.uptimeMillis()
+    fun allowTargetTemporarily(targetPackage: String, sourcePackage: String? = null) {
+        val now = SystemClock.uptimeMillis()
+        allowedTargetPackage = targetPackage
+        allowedTargetUntil = now + ALLOW_WINDOW_MS
+        originatingSourcePackage = sourcePackage
+        recentlyAllowedPackage = null
+        recentlyAllowedUntil = 0L
         activeGuardedTargetPackage = null
         activeGuardedTargetUntil = 0L
     }
 
-    private fun isLauncherPackage(packageName: String?): Boolean {
+    private fun isSystemUtility(packageName: String?, prefs: com.rdevzph.redirectguard.data.PreferencesManager): Boolean {
         if (packageName.isNullOrBlank()) return false
-        if (packageName == "com.google.android.apps.nexuslauncher" ||
-            packageName == "com.android.launcher3" ||
-            packageName == "com.transsion.hilauncher" ||
-            packageName == "com.sec.android.app.launcher" ||
-            packageName == "com.miui.home" ||
-            packageName == "com.oppo.launcher" ||
-            packageName == "com.coloros.launcher" ||
-            packageName == "com.huawei.android.launcher" ||
-            packageName == "com.oneplus.launcher" ||
-            packageName == "com.teslacoilsw.launcher" ||
-            packageName == "com.actionlauncher.playstore"
-        ) {
-            return true
-        }
+        if (!prefs.whitelistSystemApps.value) return false
+        // OEM pre-installed shopping or guarded apps are never system utilities
+        if (prefs.guardedPackages.value.contains(packageName)) return false
+        if (isBrowserApp(packageName)) return false
+        return isSystemApp(packageName)
+    }
 
-        return try {
-            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-            val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                packageManager.queryIntentActivities(
-                    intent,
-                    PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL)
-            }
-            resolveInfos.any { it.activityInfo?.packageName == packageName }
-        } catch (e: Exception) {
-            false
-        }
+    private fun isLauncherPackage(packageName: String?): Boolean {
+        return isLauncherPackage(this, packageName)
     }
 
     private fun isSystemUIPackage(packageName: String?): Boolean {
@@ -390,8 +435,53 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         private const val ALLOW_WINDOW_MS = 15000L
         private const val ACTIVE_SUPPRESSION_WINDOW_MS = 4000L
 
+        private var lastActiveSourcePackage: String? = null
+        private var lastTransitionTime: Long = 0L
+
+        private var lastAppActivePackage: String? = null
+        private var lastAppActiveTime: Long = 0L
+
         private var allowedTargetPackage: String? = null
-        private var allowedTargetTimestamp: Long = 0L
+        private var allowedTargetUntil: Long = 0L
+        private var originatingSourcePackage: String? = null
+        private var recentlyAllowedPackage: String? = null
+        private var recentlyAllowedUntil: Long = 0L
+
+        fun isLauncherPackage(context: Context, packageName: String?): Boolean {
+            if (packageName.isNullOrBlank()) return false
+            if (packageName == "com.google.android.apps.nexuslauncher" ||
+                packageName == "com.android.launcher3" ||
+                packageName == "com.transsion.hilauncher" ||
+                packageName == "com.sec.android.app.launcher" ||
+                packageName == "com.miui.home" ||
+                packageName == "com.oppo.launcher" ||
+                packageName == "com.coloros.launcher" ||
+                packageName == "com.huawei.android.launcher" ||
+                packageName == "com.oneplus.launcher" ||
+                packageName == "com.teslacoilsw.launcher" ||
+                packageName == "com.actionlauncher.playstore" ||
+                packageName.contains("launcher") ||
+                packageName.contains("home")
+            ) {
+                return true
+            }
+
+            return try {
+                val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.queryIntentActivities(
+                        intent,
+                        PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+                }
+                resolveInfos.any { it.activityInfo?.packageName == packageName }
+            } catch (e: Exception) {
+                false
+            }
+        }
 
         private var activeGuardedTargetPackage: String? = null
         private var activeGuardedTargetUntil: Long = 0L

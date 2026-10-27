@@ -88,6 +88,7 @@ import java.util.Locale
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
+    onOpenSetupWizard: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isGuardEnabled by viewModel.isGuardEnabled.collectAsState()
@@ -131,6 +132,12 @@ fun MainScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh status"
+                        )
+                    }
+                    IconButton(onClick = onOpenSetupWizard) {
+                        Icon(
+                            imageVector = Icons.Default.AdminPanelSettings,
+                            contentDescription = "Setup and Requirements"
                         )
                     }
                     IconButton(onClick = { showLimitationsDialog = true }) {

@@ -52,8 +52,18 @@ class PreferencesManager(private val context: Context) {
     )
     val showStatusNotification: StateFlow<Boolean> = _showStatusNotification.asStateFlow()
 
+    private val _hasCompletedSetup = MutableStateFlow(
+        prefs.getBoolean(KEY_HAS_COMPLETED_SETUP, false)
+    )
+    val hasCompletedSetup: StateFlow<Boolean> = _hasCompletedSetup.asStateFlow()
+
     private val _recentRedirects = MutableStateFlow(loadRecentRedirects())
     val recentRedirects: StateFlow<List<RedirectRecord>> = _recentRedirects.asStateFlow()
+
+    fun setSetupCompleted(completed: Boolean) {
+        prefs.edit().putBoolean(KEY_HAS_COMPLETED_SETUP, completed).apply()
+        _hasCompletedSetup.value = completed
+    }
 
     fun setShowStatusNotification(show: Boolean) {
         prefs.edit().putBoolean(KEY_SHOW_STATUS_NOTIFICATION, show).apply()
@@ -258,6 +268,7 @@ class PreferencesManager(private val context: Context) {
         private const val KEY_SHOW_STATUS_NOTIFICATION = "show_status_notification"
         private const val KEY_RECENT_REDIRECTS = "recent_redirects"
         private const val KEY_HAS_PROMPTED_BATTERY = "has_prompted_battery"
+        private const val KEY_HAS_COMPLETED_SETUP = "has_completed_setup"
         private const val MAX_HISTORY_ITEMS = 50
     }
 }

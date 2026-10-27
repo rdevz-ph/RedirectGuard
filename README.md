@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://android.com"><img src="https://img.shields.io/badge/Platform-Android-34A853?style=flat-square" alt="Platform"></a>
-  <a href="https://github.com/rdevz-ph/RedirectGuard/releases"><img src="https://img.shields.io/badge/Version-v1.0-blue?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/rdevz-ph/RedirectGuard/releases"><img src="https://img.shields.io/badge/Version-v1.1-blue?style=flat-square" alt="Version"></a>
   <a href="https://developer.android.com/about/versions/nougat"><img src="https://img.shields.io/badge/Min%20SDK-24%20(Android%207.0)-0284C7?style=flat-square" alt="Min SDK"></a>
   <a href="https://developer.android.com/about/versions/15"><img src="https://img.shields.io/badge/Target%20SDK-35%2B-0284C7?style=flat-square" alt="Target SDK"></a>
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square" alt="Language"></a>
@@ -34,6 +34,7 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
 
 ## Features
 
+- **Dedicated Setup Wizard**: Guides first-time setup with an interactive checklist to verify requirements before entering the main dashboard, with one-tap configuration via Shizuku.
 - **Permission Confirmation Prompt**: Displays an alert asking whether you want to continue to the target app or remain in your current app, complete with a safety countdown timer.
 - **Deep Link Interception**: Stops unauthorized deep links from automatically loading before you grant permission.
 - **Process Termination via Shizuku**: Force-stops the target app process using Shizuku shell to terminate background tasks and cancel deep links completely.

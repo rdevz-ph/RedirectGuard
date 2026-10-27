@@ -1,18 +1,16 @@
-# Redirect Guard v1.0
+# Redirect Guard v1.1
 
-### What's New in v1.0
+### What's New in v1.1
 
 #### Added
-- **Initial Release**: Initial official release of Redirect Guard for Android.
-- **Permission Confirmation Prompt**: Added a prompt asking whether to stay in your current app or proceed to the target app when a redirect happens.
-- **Deep Link Interception**: Added detection and blocking of unauthorized deep links from ads and external web pages.
-- **Process Kill Interception**: Added automated termination of redirected target apps using Shizuku to keep you in your browser.
-- **Interception Modes**: Added the ability to choose between asking for confirmation and instant auto-return.
-- **Smart Launcher Whitelist**: Added automatic whitelisting for home screen launchers and system utilities to prevent false positives when launching apps normally.
-- **Guarded App Configuration**: Added configurable presets for shopping apps alongside an option to guard all external apps.
-- **Activity Log**: Added a log that records intercepted redirect events with timestamps, source app names, and target app names.
-- **Accessibility Health Monitoring**: Added automated detection for killed or desynced accessibility service states, with options to force stop the app to clear stuck states, enable the service with one tap through Shizuku, and open system accessibility settings directly.
-- **Redirect Tester Companion**: Added an optional companion testing app to simulate common shopping app redirects and verify that Redirect Guard is active.
+- **Dedicated Setup Wizard**: Added a guided first-launch setup wizard that checks and verifies all required permissions before entering the main dashboard.
+- **One-Tap Permission Setup via Shizuku**: Added automated one-tap granting for notifications, overlay display, and battery optimization exemption through Shizuku.
+- **Setup Wizard Re-entry**: Added an option on the main dashboard to reopen the setup wizard at any time.
+
+#### Fixed
+- **Recent Apps Guard Bypass**: Fixed an issue where switching back to an app through Recent Apps allowed subsequent redirects to bypass the guard due to trailing launcher animation events.
+- **Immediate Prompt Dismissal on Complex Apps**: Fixed a race condition where apps with rapid multi-activity launches, such as Shopee, caused the source app to be brought to the front over the confirmation dialog.
+- **Background Event Filtering**: Added active window verification so background and closing window events from exiting apps do not trigger unintended redirect prompts.
 
 ### Features
 - Deep link and app redirect interception using Android Accessibility Service

@@ -104,17 +104,39 @@ class ShizukuHelper(private val context: Context) {
 
     /**
      * Attempts to grant SYSTEM_ALERT_WINDOW via Shizuku shell.
-     * Returns true if the command executed without error.
+     * Uses appops set which is the standard shell method across Android versions.
      */
     fun grantOverlayPermission(): Boolean {
         if (!_isPermissionGranted.value) return false
         return try {
             val pkg = context.packageName
-            val (exitCode, _) = executeCommand(arrayOf("pm", "grant", pkg, "android.permission.SYSTEM_ALERT_WINDOW"))
+            val (exitCode, _) = executeCommand(arrayOf("appops", "set", pkg, "SYSTEM_ALERT_WINDOW", "allow"))
+            try {
+                executeCommand(arrayOf("pm", "grant", pkg, "android.permission.SYSTEM_ALERT_WINDOW"))
+            } catch (ignored: Exception) {}
             Log.d(TAG, "Grant overlay exit code: $exitCode")
             exitCode == 0
         } catch (e: Exception) {
             Log.e(TAG, "Error granting overlay via Shizuku", e)
+            false
+        }
+    }
+
+    /**
+     * Attempts to grant POST_NOTIFICATIONS runtime permission via Shizuku shell.
+     */
+    fun grantNotificationPermission(): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val pkg = context.packageName
+            val (exitCode, _) = executeCommand(arrayOf("pm", "grant", pkg, "android.permission.POST_NOTIFICATIONS"))
+            try {
+                executeCommand(arrayOf("appops", "set", pkg, "POST_NOTIFICATIONS", "allow"))
+            } catch (ignored: Exception) {}
+            Log.d(TAG, "Grant notification exit code: $exitCode")
+            exitCode == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error granting notification via Shizuku", e)
             false
         }
     }
@@ -128,6 +150,9 @@ class ShizukuHelper(private val context: Context) {
         return try {
             val pkg = context.packageName
             val (exitCode, _) = executeCommand(arrayOf("cmd", "deviceidle", "whitelist", "+$pkg"))
+            if (exitCode != 0) {
+                executeCommand(arrayOf("dumpsys", "deviceidle", "whitelist", "+$pkg"))
+            }
             Log.d(TAG, "Whitelist battery optimization exit code: $exitCode")
             exitCode == 0
         } catch (e: Exception) {
@@ -255,6 +280,34 @@ class ShizukuHelper(private val context: Context) {
             }
         }
         return null
+    }
+
+    /**
+     * Inspects the activity stack via Shizuku dumpsys to identify the previous foreground app.
+     */
+    fun getPreviousForegroundPackage(currentPackage: String): String? {
+        if (!_isPermissionGranted.value) return null
+        return try {
+            val (exitCode, output) = executeCommand(arrayOf("dumpsys", "activity", "activities"))
+            if (exitCode != 0 || output.isBlank()) return null
+            val pattern = Regex("""mLastPausedActivity:\s*ActivityRecord\{[0-9a-fA-F]+\s+u\d+\s+([a-zA-Z0-9._]+)/""")
+            val matches = pattern.findAll(output)
+            for (match in matches) {
+                val pkg = match.groupValues[1]
+                if (pkg != currentPackage &&
+                    pkg != context.packageName &&
+                    !pkg.contains("systemui") &&
+                    !com.rdevzph.redirectguard.service.RedirectGuardAccessibilityService.isLauncherPackage(context, pkg)
+                ) {
+                    Log.d(TAG, "Resolved previous foreground package via dumpsys: $pkg")
+                    return pkg
+                }
+            }
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error resolving previous foreground package", e)
+            null
+        }
     }
 
     private fun checkShizukuInstalled(): Boolean {

@@ -11,6 +11,7 @@
 - **Recent Apps Guard Bypass**: Fixed an issue where switching back to an app through Recent Apps allowed subsequent redirects to bypass the guard due to trailing launcher animation events.
 - **Immediate Prompt Dismissal on Complex Apps**: Fixed a race condition where apps with rapid multi-activity launches, such as Shopee, caused the source app to be brought to the front over the confirmation dialog.
 - **Background Event Filtering**: Added active window verification so background and closing window events from exiting apps do not trigger unintended redirect prompts.
+- **Normal App Switch Guard Invalidation**: Fixed an issue where normal app switches from the home screen, app drawer, or sidebar were intercepted by invalidating the guard when a launch does not contain a deep link URL.
 
 ### Features
 - Deep link and app redirect interception using Android Accessibility Service

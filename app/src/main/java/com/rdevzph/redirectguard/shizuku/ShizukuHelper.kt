@@ -257,29 +257,96 @@ class ShizukuHelper(private val context: Context) {
      * Parses recent tasks dump to locate the intent for the given package and extract its data URI.
      */
     fun parseDeepLinkUriFromRecents(dumpsysOutput: String, packageName: String): String? {
-        val blocks = dumpsysOutput.split(Regex("""\*\s+Recent\s+#\d+:"""))
         val intentLineRegex = Regex("""intent=\{[^\n]*\bdat=([^\s}]+)""")
         val generalDatRegex = Regex("""\bdat=([^\s}]+)""")
 
-        for (block in blocks) {
-            if (block.contains(packageName)) {
-                val intentMatch = intentLineRegex.find(block)
+        // 1. Check Recent tasks section, dropping the initial header block before the first task
+        val recentSection = dumpsysOutput.split("Visible recent tasks")[0]
+        val tasks = recentSection.split(Regex("""\*\s+Recent\s+#\d+:""")).drop(1)
+
+        for (task in tasks) {
+            val firstLine = task.trimStart().lines().firstOrNull() ?: ""
+            if (task.contains("pkg=$packageName") ||
+                task.contains("cmp=$packageName/") ||
+                task.contains(":$packageName") ||
+                firstLine.contains(packageName)
+            ) {
+                val intentMatch = intentLineRegex.find(task) ?: generalDatRegex.find(task)
                 if (intentMatch != null) {
                     val uri = intentMatch.groupValues[1]
-                    if (uri.isNotBlank() && !uri.endsWith("...")) {
+                    if (uri.isNotBlank()) {
                         return uri
                     }
                 }
-                val generalMatch = generalDatRegex.find(block)
-                if (generalMatch != null) {
-                    val uri = generalMatch.groupValues[1]
-                    if (uri.isNotBlank() && !uri.endsWith("...")) {
-                        return uri
+                return null
+            }
+        }
+
+        // 2. Fallback to Visible recent tasks section
+        if (dumpsysOutput.contains("Visible recent tasks")) {
+            val visibleSection = dumpsysOutput.split("Visible recent tasks")[1]
+            val vTasks = visibleSection.split(Regex("""\*\s+RecentTaskInfo\s+#\d+:""")).drop(1)
+            for (vTask in vTasks) {
+                if (vTask.contains("pkg=$packageName") || vTask.contains("cmp=$packageName/")) {
+                    val m = generalDatRegex.find(vTask)
+                    if (m != null) {
+                        val uri = m.groupValues[1]
+                        if (uri.isNotBlank()) {
+                            return uri
+                        }
                     }
+                    return null
                 }
             }
         }
+
         return null
+    }
+
+    /**
+     * Checks recent tasks to determine if the specified package was launched as a standard launcher
+     * task without any deep link URI (e.g. from the home screen launcher, app drawer, or sidebar).
+     */
+    fun isNormalLauncherIntent(packageName: String): Boolean {
+        if (!_isPermissionGranted.value) return false
+        return try {
+            val (exitCode, output) = executeCommand(arrayOf("dumpsys", "activity", "recents"))
+            if (exitCode != 0 || output.isBlank()) return false
+
+            val recentSection = output.split("Visible recent tasks")[0]
+            val tasks = recentSection.split(Regex("""\*\s+Recent\s+#\d+:""")).drop(1)
+
+            for (task in tasks) {
+                val firstLine = task.trimStart().lines().firstOrNull() ?: ""
+                if (task.contains("pkg=$packageName") ||
+                    task.contains("cmp=$packageName/") ||
+                    task.contains(":$packageName") ||
+                    firstLine.contains(packageName)
+                ) {
+                    val hasLauncherCategory = task.contains("cat=[android.intent.category.LAUNCHER]")
+                    val hasHomeCategory = task.contains("cat=[android.intent.category.HOME]")
+                    val hasDataUri = task.contains("dat=")
+                    return (hasLauncherCategory || hasHomeCategory) && !hasDataUri
+                }
+            }
+
+            if (output.contains("Visible recent tasks")) {
+                val visibleSection = output.split("Visible recent tasks")[1]
+                val vTasks = visibleSection.split(Regex("""\*\s+RecentTaskInfo\s+#\d+:""")).drop(1)
+                for (vTask in vTasks) {
+                    if (vTask.contains("pkg=$packageName") || vTask.contains("cmp=$packageName/")) {
+                        val hasLauncherCategory = vTask.contains("cat=[android.intent.category.LAUNCHER]")
+                        val hasHomeCategory = vTask.contains("cat=[android.intent.category.HOME]")
+                        val hasDataUri = vTask.contains("dat=")
+                        return (hasLauncherCategory || hasHomeCategory) && !hasDataUri
+                    }
+                }
+            }
+
+            false
+        } catch (e: Exception) {
+            false
+        }
     }
 
     /**

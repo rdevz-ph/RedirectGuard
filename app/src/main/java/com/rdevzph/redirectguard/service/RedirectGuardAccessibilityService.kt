@@ -132,13 +132,14 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             }
         }
 
-        // Resolve source package, falling back to activity stack inspection if null or if launcher was incorrectly recorded
+        // Resolve source package, falling back to activity stack inspection only if null
         var effectiveSource = lastActiveSourcePackage
         val isGuarded = !prefs.isPackageWhitelisted(packageName) &&
-                (prefs.guardAllExternalApps.value || prefs.guardedPackages.value.contains(packageName))
+                (prefs.guardedPackages.value.contains(packageName) ||
+                 (prefs.guardAllExternalApps.value && !isBrowserApp(packageName)))
 
-        // If effectiveSource is missing or is launcher, verify via Shizuku dumpsys whether an app was actually paused
-        if (isGuarded && (effectiveSource == null || isLauncherPackage(this, effectiveSource))) {
+        // If effectiveSource is missing, verify via Shizuku dumpsys whether an app was actually paused
+        if (isGuarded && effectiveSource == null) {
             val verifiedSource = RedirectGuardApplication.instance.shizukuHelper.getPreviousForegroundPackage(packageName)
             if (verifiedSource != null) {
                 Log.d(TAG, "Corrected effectiveSource from '$effectiveSource' to '$verifiedSource' via dumpsys")
@@ -147,6 +148,15 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 lastAppActivePackage = verifiedSource
                 lastAppActiveTime = now
             }
+        }
+
+        // If the target app was started via a normal launcher intent without a deep link (e.g. user app switch, home screen icon, sidebar), skip interception
+        if (RedirectGuardApplication.instance.shizukuHelper.isNormalLauncherIntent(packageName)) {
+            Log.d(TAG, "Target $packageName launched via normal launcher intent without deep link, skipping interception")
+            lastActiveSourcePackage = packageName
+            lastAppActivePackage = packageName
+            lastAppActiveTime = now
+            return
         }
 
         // Detect if user launched directly from their home launcher or a system utility
@@ -224,6 +234,18 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         val deepLinkUri = RedirectGuardApplication.instance.shizukuHelper.extractRecentDeepLinkUri(targetPkg)
         Log.d(TAG, "Captured deep link URI for $targetPkg: $deepLinkUri")
+
+        // Invalidate guard if target is a browser without a deep link URL or an unlisted external app without a deep link URL
+        if ((isBrowserApp(targetPkg) || !prefs.guardedPackages.value.contains(targetPkg)) &&
+            deepLinkUri == null &&
+            RedirectGuardApplication.instance.shizukuHelper.isPermissionGranted.value
+        ) {
+            Log.d(TAG, "Target $targetPkg has no deep link URL, invalidating guard (normal app switch)")
+            lastActiveSourcePackage = targetPkg
+            lastAppActivePackage = targetPkg
+            lastAppActiveTime = SystemClock.uptimeMillis()
+            return
+        }
 
         // Immediately force stop target package via Shizuku shell to prevent it from escaping or continuing activities
         val killed = RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(targetPkg)
@@ -360,7 +382,6 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 packageName == "com.google.android.permissioncontroller" ||
                 packageName == "com.transsnet.store" ||
                 packageName.contains("phonehelper") ||
-                packageName.contains("smartpanel") ||
                 packageName == "com.google.android.gms"
     }
 
@@ -461,7 +482,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 packageName == "com.teslacoilsw.launcher" ||
                 packageName == "com.actionlauncher.playstore" ||
                 packageName.contains("launcher") ||
-                packageName.contains("home")
+                packageName.contains("home") ||
+                packageName.contains("smartpanel") ||
+                packageName.contains("sidepanel") ||
+                packageName.contains("edgepanel")
             ) {
                 return true
             }

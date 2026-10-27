@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <queries>
+        <!-- Redirect Guard package -->
+        <package android:name="com.rdevzph.redirectguard" />
+
+        <!-- Target shopping apps -->
+        <package android:name="com.shopee.ph" />
+        <package android:name="com.lazada.android" />
+        <package android:name="com.zhiliaoapp.musically" />
+        <package android:name="com.ss.android.ugc.trill" />
+        <package android:name="com.amazon.mShop.android.shopping" />
+
+        <!-- Web Intent handling -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+
+        <!-- Custom Shopping Schemes for Android 11+ visibility -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="shopeeph" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="shopee" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="lazada" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="snssdk1233" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="snssdk1180" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="com.amazon.mobile.shopping.web" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.RedirectTester">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.RedirectTester">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

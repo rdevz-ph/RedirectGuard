@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Blue Shield -->
+    <path
+        android:fillColor="#0284C7"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="1.2"
+        android:pathData="M54,26.5 C68,29 78,30 78,34 L78,56 C78,70 66,78 54,82 C42,78 30,70 30,56 L30,34 C30,30 40,29 54,26.5 Z" />
+
+    <!-- Crisp White Forward Redirect Arrow -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M57.2,40.8 L68.4,52 L57.2,63.2 L57.2,56.6 C49.2,56.6 43.6,59.2 39.6,64.8 C41.2,56.8 46,48.8 57.2,47.2 Z" />
+
+</vector>

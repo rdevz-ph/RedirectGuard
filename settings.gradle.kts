@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "RedirectGuard"
 include(":app")
+include(":tester")

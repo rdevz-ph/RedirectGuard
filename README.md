@@ -83,6 +83,27 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
    ./gradlew installDebug
    ```
 
+### Building the Tester Companion App
+
+The repository includes an optional companion app in the `:tester` module. It allows you to test Redirect Guard safely without needing to visit ad-heavy websites or trigger accidental app redirects.
+
+The tester companion app allows you to:
+- Test redirects to common shopping apps (Shopee, Lazada, TikTok, and Amazon) using both web URLs and custom app schemes.
+- Run a 3-second delayed ad simulator to test background detection.
+- Check if Redirect Guard is installed and whether its accessibility service is active.
+- Test custom deep links and package intents.
+
+To compile and install the tester companion app:
+
+1. Build the tester debug APK:
+   ```bash
+   ./gradlew :tester:assembleDebug
+   ```
+2. Or install it directly on your connected device:
+   ```bash
+   ./gradlew :tester:installDebug
+   ```
+
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.

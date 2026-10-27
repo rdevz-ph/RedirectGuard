@@ -15,6 +15,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-F97316?style=flat-square" alt="License"></a>
 </p>
 
+> [!WARNING]
+> Redirect Guard uses Android Accessibility Service and Shizuku to detect unwanted app launches and immediately terminate redirected processes. Because Android window detection happens after an app begins to open, a redirected app may briefly appear on screen before being closed. While Redirect Guard includes battery optimization exemptions and health monitoring to stay active, aggressive device-specific battery savers may still restrict background services. Redirect Guard serves as a practical shield against intrusive ad redirects, not as a guaranteed security solution against malware.
+
 ## Overview
 
 Are you tired of ads instantly redirecting you to apps like Shopee or Lazada without your consent? What if you could use an Android app called Redirect Guard that asks for your permission before opening another app, giving you control over unwanted redirects?

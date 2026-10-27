@@ -2,7 +2,7 @@ package com.rdevzph.redirectguard.shizuku
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
+import com.rdevzph.redirectguard.util.AppLogger as Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -38,6 +38,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Uncomment to test crash reporter:
+        // throw RuntimeException("Test crash to verify Redirect Guard crash reporter")
         requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {

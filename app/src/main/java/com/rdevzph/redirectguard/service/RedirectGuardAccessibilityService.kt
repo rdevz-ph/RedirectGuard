@@ -10,7 +10,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.util.Log
+import com.rdevzph.redirectguard.util.AppLogger as Log
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
 import com.rdevzph.redirectguard.RedirectGuardApplication
@@ -45,8 +45,13 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         val className = event.className?.toString()
         Log.w(TAG, "onAccessibilityEvent: pkg=$packageName, class=$className, currentSource=$lastActiveSourcePackage")
 
-        // 1. Ignore our own app UI (confirmation prompt and main screen)
+        // 1. Handle our own app UI: update source tracking when on main screen so intentional links are not intercepted
         if (packageName == applicationContext.packageName) {
+            if (className != "com.rdevzph.redirectguard.ui.prompt.RedirectConfirmationActivity") {
+                lastActiveSourcePackage = packageName
+                lastAppActivePackage = packageName
+                lastAppActiveTime = SystemClock.uptimeMillis()
+            }
             return
         }
 

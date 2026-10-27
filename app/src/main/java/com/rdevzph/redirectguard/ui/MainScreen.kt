@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -73,7 +76,10 @@ import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
 import com.rdevzph.redirectguard.model.InterceptionStrategy
 import com.rdevzph.redirectguard.model.RedirectAction
+import com.rdevzph.redirectguard.ui.components.LogsView
+import com.rdevzph.redirectguard.ui.components.M3ExpressiveFloatingToolbar
 import com.rdevzph.redirectguard.ui.components.StatusCard
+import com.rdevzph.redirectguard.util.LogLevel
 import com.rdevzph.redirectguard.ui.theme.StatusActive
 import com.rdevzph.redirectguard.ui.theme.StatusActiveContainer
 import com.rdevzph.redirectguard.ui.theme.StatusInactive
@@ -113,6 +119,14 @@ fun MainScreen(
     val installedApps by viewModel.installedApps.collectAsState()
     val isLoadingApps by viewModel.isLoadingApps.collectAsState()
 
+    val selectedTab by viewModel.selectedTab.collectAsState()
+    val appLogs by viewModel.appLogs.collectAsState()
+    val showRedirectLogs by viewModel.showRedirectLogs.collectAsState()
+    val showDebugLogs by viewModel.showDebugLogs.collectAsState()
+    val showErrorLogs by viewModel.showErrorLogs.collectAsState()
+    val showWarnLogs by viewModel.showWarnLogs.collectAsState()
+    val logSearchQuery by viewModel.logSearchQuery.collectAsState()
+
     var showLimitationsDialog by remember { mutableStateOf(false) }
     var showAppPickerModal by remember { mutableStateOf(false) }
     var appSearchQuery by remember { mutableStateOf("") }
@@ -122,18 +136,12 @@ fun MainScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Redirect Guard",
+                        text = if (selectedTab == MainScreenTab.DASHBOARD) "Redirect Guard" else "Logs & Activity",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.refreshStatus() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh status"
-                        )
-                    }
                     IconButton(onClick = onOpenSetupWizard) {
                         Icon(
                             imageVector = Icons.Default.AdminPanelSettings,
@@ -154,13 +162,20 @@ fun MainScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            when (selectedTab) {
+                MainScreenTab.DASHBOARD -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
 
             // Master Protection Banner
@@ -905,158 +920,51 @@ fun MainScreen(
                 }
             }
 
-            // Section: Recent Activity Log
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Recent Interceptions",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        item { Spacer(modifier = Modifier.height(24.dp)) }
+                    }
+                }
+                MainScreenTab.LOGS -> {
+                    LogsView(
+                        redirectRecords = recentRedirects,
+                        appLogs = appLogs,
+                        showRedirects = showRedirectLogs,
+                        showDebug = showDebugLogs,
+                        showErrors = showErrorLogs,
+                        showWarnings = showWarnLogs,
+                        onToggleRedirects = { viewModel.toggleShowRedirectLogs(it) },
+                        onToggleDebug = { viewModel.toggleShowDebugLogs(it) },
+                        onToggleErrors = { viewModel.toggleShowErrorLogs(it) },
+                        onToggleWarnings = { viewModel.toggleShowWarnLogs(it) },
+                        searchQuery = logSearchQuery,
+                        onSearchQueryChange = { viewModel.setLogSearchQuery(it) },
+                        onClearAll = { viewModel.clearAllLogs() },
+                        modifier = Modifier.fillMaxSize()
                     )
-
-                    if (recentRedirects.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.clearHistory() }) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Clear History",
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
                 }
             }
 
-            if (recentRedirects.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(36.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "No redirects recorded yet",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "When an ad attempts to open an external app, details will appear here.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
+            val visibleErrorCount = if (showErrorLogs) appLogs.count { it.level == LogLevel.ERROR } else 0
+            val visibleLogsCount = (if (showRedirectLogs) recentRedirects.size else 0) +
+                appLogs.count { entry ->
+                    when (entry.level) {
+                        LogLevel.DEBUG -> showDebugLogs
+                        LogLevel.ERROR -> showErrorLogs
+                        LogLevel.WARN -> showWarnLogs
+                        LogLevel.INFO -> true
                     }
                 }
-            } else {
-                items(recentRedirects) { record ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = record.sourceAppName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = "to",
-                                        tint = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = record.targetAppName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
 
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                val timeString = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
-                                    .format(Date(record.timestamp))
-
-                                Text(
-                                    text = "$timeString • ${record.triggerReason}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                if (!record.deepLinkUri.isNullOrBlank()) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "Link: ${record.deepLinkUri}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            val (badgeBg, badgeFg, label) = when (record.actionTaken) {
-                                RedirectAction.BLOCKED -> Triple(StatusInactiveContainer, StatusInactive, "Blocked")
-                                RedirectAction.ALLOWED -> Triple(StatusActiveContainer, StatusActive, "Allowed")
-                                RedirectAction.PROMPTED -> Triple(StatusWarningContainer, StatusWarning, "Prompted")
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = badgeBg
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = badgeFg,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+            M3ExpressiveFloatingToolbar(
+                selectedTab = selectedTab,
+                onSelectTab = { viewModel.selectTab(it) },
+                onRefresh = { viewModel.refreshStatus() },
+                errorCount = visibleErrorCount,
+                totalLogsCount = visibleLogsCount,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp)
+            )
         }
     }
 
@@ -1155,7 +1063,32 @@ fun MainScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Open on GitHub", style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    text = "Open on GitHub",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedButton(
+                                onClick = { viewModel.openIssuesUrl() },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BugReport,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Report an Issue",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }

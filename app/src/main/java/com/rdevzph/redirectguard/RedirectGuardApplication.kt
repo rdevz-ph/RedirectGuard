@@ -15,10 +15,12 @@ class RedirectGuardApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        com.rdevzph.redirectguard.crash.CrashHandler.install(this)
         preferencesManager = PreferencesManager(this)
         shizukuHelper = ShizukuHelper(this)
         com.rdevzph.redirectguard.notification.NotificationHelper.createNotificationChannels(this)
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(this)
+        com.rdevzph.redirectguard.util.AppLogger.d("RedirectGuardApp", "Application initialized successfully (v1.2)")
     }
 
     override fun onTerminate() {

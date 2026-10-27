@@ -16,6 +16,8 @@ import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
 import com.rdevzph.redirectguard.model.RedirectRecord
 import com.rdevzph.redirectguard.service.RedirectGuardAccessibilityService
+import com.rdevzph.redirectguard.util.AppLogEntry
+import com.rdevzph.redirectguard.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +26,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+enum class MainScreenTab {
+    DASHBOARD,
+    LOGS
+}
 
 data class InstalledAppItem(
     val packageName: String,
@@ -80,6 +87,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isLoadingApps = MutableStateFlow(false)
     val isLoadingApps: StateFlow<Boolean> = _isLoadingApps.asStateFlow()
+
+    val appLogs: StateFlow<List<AppLogEntry>> = AppLogger.entries
+
+    private val _selectedTab = MutableStateFlow(MainScreenTab.DASHBOARD)
+    val selectedTab: StateFlow<MainScreenTab> = _selectedTab.asStateFlow()
+
+    val showRedirectLogs: StateFlow<Boolean> = prefs.logFilterRedirects
+    val showDebugLogs: StateFlow<Boolean> = prefs.logFilterDebug
+    val showErrorLogs: StateFlow<Boolean> = prefs.logFilterErrors
+    val showWarnLogs: StateFlow<Boolean> = prefs.logFilterWarnings
+
+    private val _logSearchQuery = MutableStateFlow("")
+    val logSearchQuery: StateFlow<String> = _logSearchQuery.asStateFlow()
 
     init {
         refreshStatus()
@@ -144,8 +164,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.clearWhitelistedSources()
     }
 
+    fun selectTab(tab: MainScreenTab) {
+        _selectedTab.value = tab
+    }
+
+    fun toggleShowRedirectLogs(show: Boolean) {
+        prefs.setLogFilterRedirects(show)
+    }
+
+    fun toggleShowDebugLogs(show: Boolean) {
+        prefs.setLogFilterDebug(show)
+    }
+
+    fun toggleShowErrorLogs(show: Boolean) {
+        prefs.setLogFilterErrors(show)
+    }
+
+    fun toggleShowWarnLogs(show: Boolean) {
+        prefs.setLogFilterWarnings(show)
+    }
+
+    fun setLogSearchQuery(query: String) {
+        _logSearchQuery.value = query
+    }
+
     fun clearHistory() {
         prefs.clearRedirectRecords()
+    }
+
+    fun clearAllLogs() {
+        prefs.clearRedirectRecords()
+        AppLogger.clear()
     }
 
     fun requestShizukuPermission() {
@@ -334,6 +383,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val intent = Intent(
             Intent.ACTION_VIEW,
             Uri.parse("https://github.com/rdevz-ph/RedirectGuard")
+        ).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Browser not available
+        }
+    }
+
+    fun openIssuesUrl() {
+        val context = getApplication<Application>()
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://github.com/rdevz-ph/RedirectGuard/issues")
         ).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }

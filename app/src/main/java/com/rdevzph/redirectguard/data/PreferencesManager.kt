@@ -60,6 +60,73 @@ class PreferencesManager(private val context: Context) {
     private val _recentRedirects = MutableStateFlow(loadRecentRedirects())
     val recentRedirects: StateFlow<List<RedirectRecord>> = _recentRedirects.asStateFlow()
 
+    private val _logFilterRedirects = MutableStateFlow(
+        prefs.getBoolean(KEY_LOG_FILTER_REDIRECTS, true)
+    )
+    val logFilterRedirects: StateFlow<Boolean> = _logFilterRedirects.asStateFlow()
+
+    private val _logFilterDebug = MutableStateFlow(
+        prefs.getBoolean(KEY_LOG_FILTER_DEBUG, true)
+    )
+    val logFilterDebug: StateFlow<Boolean> = _logFilterDebug.asStateFlow()
+
+    private val _logFilterErrors = MutableStateFlow(
+        prefs.getBoolean(KEY_LOG_FILTER_ERRORS, true)
+    )
+    val logFilterErrors: StateFlow<Boolean> = _logFilterErrors.asStateFlow()
+
+    private val _logFilterWarnings = MutableStateFlow(
+        prefs.getBoolean(KEY_LOG_FILTER_WARNINGS, true)
+    )
+    val logFilterWarnings: StateFlow<Boolean> = _logFilterWarnings.asStateFlow()
+
+    init {
+        com.rdevzph.redirectguard.util.AppLogger.isDebugEnabled = _logFilterDebug.value
+        com.rdevzph.redirectguard.util.AppLogger.isErrorsEnabled = _logFilterErrors.value
+        com.rdevzph.redirectguard.util.AppLogger.isWarningsEnabled = _logFilterWarnings.value
+        if (!_logFilterDebug.value) {
+            com.rdevzph.redirectguard.util.AppLogger.purgeLevel(com.rdevzph.redirectguard.util.LogLevel.DEBUG)
+        }
+        if (!_logFilterErrors.value) {
+            com.rdevzph.redirectguard.util.AppLogger.purgeLevel(com.rdevzph.redirectguard.util.LogLevel.ERROR)
+        }
+        if (!_logFilterWarnings.value) {
+            com.rdevzph.redirectguard.util.AppLogger.purgeLevel(com.rdevzph.redirectguard.util.LogLevel.WARN)
+        }
+    }
+
+    fun setLogFilterRedirects(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOG_FILTER_REDIRECTS, enabled).apply()
+        _logFilterRedirects.value = enabled
+    }
+
+    fun setLogFilterDebug(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOG_FILTER_DEBUG, enabled).apply()
+        _logFilterDebug.value = enabled
+        com.rdevzph.redirectguard.util.AppLogger.isDebugEnabled = enabled
+        if (!enabled) {
+            com.rdevzph.redirectguard.util.AppLogger.purgeLevel(com.rdevzph.redirectguard.util.LogLevel.DEBUG)
+        }
+    }
+
+    fun setLogFilterErrors(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOG_FILTER_ERRORS, enabled).apply()
+        _logFilterErrors.value = enabled
+        com.rdevzph.redirectguard.util.AppLogger.isErrorsEnabled = enabled
+        if (!enabled) {
+            com.rdevzph.redirectguard.util.AppLogger.purgeLevel(com.rdevzph.redirectguard.util.LogLevel.ERROR)
+        }
+    }
+
+    fun setLogFilterWarnings(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOG_FILTER_WARNINGS, enabled).apply()
+        _logFilterWarnings.value = enabled
+        com.rdevzph.redirectguard.util.AppLogger.isWarningsEnabled = enabled
+        if (!enabled) {
+            com.rdevzph.redirectguard.util.AppLogger.purgeLevel(com.rdevzph.redirectguard.util.LogLevel.WARN)
+        }
+    }
+
     fun setSetupCompleted(completed: Boolean) {
         prefs.edit().putBoolean(KEY_HAS_COMPLETED_SETUP, completed).apply()
         _hasCompletedSetup.value = completed
@@ -113,12 +180,14 @@ class PreferencesManager(private val context: Context) {
 
     fun isPackageWhitelisted(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return packageName in PERMANENT_WHITELISTED_PACKAGES || _whitelistedSourcePackages.value.contains(packageName)
+        return packageName == context.packageName ||
+                packageName in PERMANENT_WHITELISTED_PACKAGES ||
+                _whitelistedSourcePackages.value.contains(packageName)
     }
 
     fun isPermanentWhitelisted(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return packageName in PERMANENT_WHITELISTED_PACKAGES
+        return packageName == context.packageName || packageName in PERMANENT_WHITELISTED_PACKAGES
     }
 
     fun addWhitelistedSource(packageName: String) {
@@ -269,6 +338,10 @@ class PreferencesManager(private val context: Context) {
         private const val KEY_RECENT_REDIRECTS = "recent_redirects"
         private const val KEY_HAS_PROMPTED_BATTERY = "has_prompted_battery"
         private const val KEY_HAS_COMPLETED_SETUP = "has_completed_setup"
+        private const val KEY_LOG_FILTER_REDIRECTS = "log_filter_redirects"
+        private const val KEY_LOG_FILTER_DEBUG = "log_filter_debug"
+        private const val KEY_LOG_FILTER_ERRORS = "log_filter_errors"
+        private const val KEY_LOG_FILTER_WARNINGS = "log_filter_warnings"
         private const val MAX_HISTORY_ITEMS = 50
     }
 }

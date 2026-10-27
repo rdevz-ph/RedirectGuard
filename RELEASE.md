@@ -1,17 +1,16 @@
-# Redirect Guard v1.1
+# Redirect Guard v1.2
 
-### What's New in v1.1
+### What's New in v1.2
 
 #### Added
-- **Dedicated Setup Wizard**: Added a guided first-launch setup wizard that checks and verifies all required permissions before entering the main dashboard.
-- **One-Tap Permission Setup via Shizuku**: Added automated one-tap granting for notifications, overlay display, and battery optimization exemption through Shizuku.
-- **Setup Wizard Re-entry**: Added an option on the main dashboard to reopen the setup wizard at any time.
+- **Material 3 Expressive Floating Toolbar**: Added a floating pill toolbar at the bottom of the screen with animated tab switching between the main dashboard and the logs view.
+- **Dedicated Logs and Debug View**: Moved interception records into a dedicated logs view that records live app events, debug logs (Log.d), error logs (Log.e), and warning logs (Log.w).
+- **Log Filter Toggles**: Added filter chips to independently toggle redirects, debug logs, error logs, and warning logs.
+- **Persistent Log Filters**: The app now saves your chosen log filter preferences across restarts and stops recording disabled log levels into memory.
+- **Log Search and Export**: Added a real-time search field to filter logs by text, package, or link, along with a copy button that formats all visible logs with timestamps to your clipboard.
+- **Crash Handler and Reporter**: Added an automated crash reporter running in an isolated process that displays exception details and provides a direct shortcut to open an issue on GitHub.
+- **Readable Stack Traces**: Configured release build rules to preserve source file names and line numbers so crash stack traces remain readable.
 
-#### Fixed
-- **Recent Apps Guard Bypass**: Fixed an issue where switching back to an app through Recent Apps allowed subsequent redirects to bypass the guard due to trailing launcher animation events.
-- **Immediate Prompt Dismissal on Complex Apps**: Fixed a race condition where apps with rapid multi-activity launches, such as Shopee, caused the source app to be brought to the front over the confirmation dialog.
-- **Background Event Filtering**: Added active window verification so background and closing window events from exiting apps do not trigger unintended redirect prompts.
-- **Normal App Switch Guard Invalidation**: Fixed an issue where normal app switches from the home screen, app drawer, or sidebar were intercepted by invalidating the guard when a launch does not contain a deep link URL.
 
 ### Features
 - Deep link and app redirect interception using Android Accessibility Service
@@ -20,10 +19,12 @@
 - Automatic exclusion for home screens, app drawers, and system components
 - Guarded app selection with presets for common shopping apps
 - Interactive confirmation dialog with safety timer
-- In-app activity log showing recent redirect events
+- In-app live activity and debug log viewer with filter toggles and search
+- Floating Material 3 Expressive toolbar with integrated refresh action
+- Crash reporter with line preservation and direct GitHub issue filing
 - Shizuku integration for one-tap permission setup and app termination
-- Accessibility service health checker with one-tap enablement, stuck state clearing, and direct settings access
-- Optional Redirect Tester companion app for testing redirects and verifying service status
+- Accessibility service health checker with one-tap enablement and stuck state clearing
+- Optional Redirect Tester companion app for testing redirects safely
 - Modern Material 3 user interface with dynamic theme support
 
 ### Requirements

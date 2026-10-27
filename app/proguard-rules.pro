@@ -4,8 +4,8 @@
 -repackageclasses ''
 -allowaccessmodification
 
-# Preserve line numbers and source file for debugging
--keepattributes SourceFile,LineNumberTable
+# Preserve line numbers and source file names for readable crash stack traces
+-keepattributes SourceFile,LineNumberTable,MethodParameters
 -renamesourcefileattribute SourceFile
 
 # Preserve standard annotations and generic signatures for Compose and Coroutines
@@ -23,6 +23,7 @@
 -keep class com.rdevzph.redirectguard.RedirectGuardApplication { *; }
 -keep class com.rdevzph.redirectguard.MainActivity { *; }
 -keep class com.rdevzph.redirectguard.ui.prompt.RedirectConfirmationActivity { *; }
+-keep class com.rdevzph.redirectguard.crash.** { *; }
 -keep class com.rdevzph.redirectguard.service.** { *; }
 -keep class com.rdevzph.redirectguard.shizuku.** { *; }
 -keep class com.rdevzph.redirectguard.notification.** { *; }

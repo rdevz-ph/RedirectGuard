@@ -76,6 +76,15 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.RedirectGuard.Dialog" />
 
+        <!-- Crash Reporter Activity -->
+        <activity
+            android:name=".crash.CrashReportActivity"
+            android:exported="false"
+            android:process=":crash"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.RedirectGuard" />
+
         <!-- Accessibility Service for App Transition Detection -->
         <service
             android:name=".service.RedirectGuardAccessibilityService"

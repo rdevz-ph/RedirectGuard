@@ -34,6 +34,14 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
   <img src="docs/screenshots/Alert-Sample.jpg" alt="Redirect Guard Alert Prompt" width="23%">
 </p>
 
+## Download
+
+<p align="center">
+  <a href="https://github.com/rdevz-ph/RedirectGuard/releases/latest">
+    <img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="75">
+  </a>
+</p>
+
 ## Features
 
 - **Dedicated Setup Wizard**: Guides first-time setup with an interactive checklist to verify requirements before entering the main dashboard, with one-tap configuration via Shizuku.

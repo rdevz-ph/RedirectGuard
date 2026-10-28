@@ -37,13 +37,13 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
 ## Download
 
 <p align="center">
-  <a href="https://github.com/rdevz-ph/RedirectGuard/releases/latest">
-    <img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="75">
-  </a>
-  <a href="https://awesome-shizuku.vercel.app/apps/redirectguard">
-    <img src="https://awesome-shizuku.vercel.app/get-it-on-shizustore.png" alt="Get it on ShizuStore" height="75">
-  </a>
+  <a href="https://github.com/rdevz-ph/RedirectGuard/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="75"></a>
+  <a href="https://awesome-shizuku.vercel.app/apps/redirectguard"><img src="https://awesome-shizuku.vercel.app/get-it-on-shizustore.png" alt="Get it on ShizuStore" height="75"></a>
 </p>
+
+> [!TIP]
+> **Want to test or verify the app functionality?**
+> Please use **Redirect Tester** (`RedirectGuardTester-*-release.zip`): An optional companion tool packaged as a ZIP archive to prevent app store indexers from mistaking it for the main app. Extract the ZIP to install the companion tester APK and verify Redirect Guard safely.
 
 ## Features
 

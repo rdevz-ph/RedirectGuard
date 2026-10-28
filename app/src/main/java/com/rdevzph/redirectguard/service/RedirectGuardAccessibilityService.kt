@@ -359,11 +359,11 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
     private fun isSystemUtility(packageName: String?, prefs: com.rdevzph.redirectguard.data.PreferencesManager): Boolean {
         if (packageName.isNullOrBlank()) return false
-        if (!prefs.whitelistSystemApps.value) return false
+
         // OEM pre-installed shopping or guarded apps are never system utilities
         if (prefs.guardedPackages.value.contains(packageName)) return false
         if (isBrowserApp(packageName)) return false
-        return isSystemApp(packageName)
+        return prefs.isPackageWhitelisted(packageName) && isSystemApp(packageName)
     }
 
     private fun isLauncherPackage(packageName: String?): Boolean {

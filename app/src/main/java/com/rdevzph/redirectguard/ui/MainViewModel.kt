@@ -29,6 +29,7 @@ import kotlinx.coroutines.withContext
 
 enum class MainScreenTab {
     DASHBOARD,
+    APPS,
     LOGS
 }
 
@@ -145,19 +146,103 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleGuardAll(guardAll: Boolean) {
         prefs.setGuardAllExternalApps(guardAll)
+        val userAppPackages = _installedApps.value.filter { !it.isSystemApp }.map { it.packageName }
+        if (userAppPackages.isNotEmpty()) {
+            if (guardAll) {
+                prefs.addGuardedPackages(userAppPackages)
+            } else {
+                prefs.removeGuardedPackages(userAppPackages)
+                val installedPackageNames = _installedApps.value.map { it.packageName }.toSet()
+                prefs.applyInstalledShoppingPresets(installedPackageNames, ignoreDisabled = true)
+            }
+        }
     }
 
     fun toggleWhitelistSystemApps(whitelist: Boolean) {
         prefs.setWhitelistSystemApps(whitelist)
+        val systemAppPackages = _installedApps.value.filter { it.isSystemApp }.map { it.packageName }
+        if (systemAppPackages.isNotEmpty()) {
+            if (whitelist) {
+                prefs.addWhitelistedSources(systemAppPackages)
+            } else {
+                prefs.removeWhitelistedSources(systemAppPackages)
+            }
+        }
     }
 
     fun togglePackageGuarded(packageName: String, guarded: Boolean) {
         if (packageName == PreferencesManager.PERMANENT_WHITELISTED_PACKAGE) return
         prefs.setPackageGuarded(packageName, guarded)
+        val app = _installedApps.value.find { it.packageName == packageName }
+        if (app?.isSystemApp == false) {
+            if (!guarded && prefs.guardAllExternalApps.value) {
+                prefs.setGuardAllExternalApps(false)
+            } else if (guarded) {
+                checkAndUpdateGuardAllState()
+            }
+        }
+        if (guarded && app?.isSystemApp == true && prefs.whitelistSystemApps.value) {
+            prefs.setWhitelistSystemApps(false)
+        }
+    }
+
+    private fun checkAndUpdateGuardAllState() {
+        val userApps = _installedApps.value.filter { !it.isSystemApp }
+        if (userApps.isNotEmpty()) {
+            val allUserGuarded = userApps.all { prefs.guardedPackages.value.contains(it.packageName) }
+            if (allUserGuarded && !prefs.guardAllExternalApps.value) {
+                prefs.setGuardAllExternalApps(true)
+            } else if (!allUserGuarded && prefs.guardAllExternalApps.value) {
+                prefs.setGuardAllExternalApps(false)
+            }
+        }
+    }
+
+    fun togglePackageWhitelisted(packageName: String, whitelisted: Boolean) {
+        if (packageName == PreferencesManager.PERMANENT_WHITELISTED_PACKAGE) return
+        if (whitelisted) {
+            prefs.addWhitelistedSource(packageName)
+            checkAndUpdateSystemAppsWhitelistState()
+            val app = _installedApps.value.find { it.packageName == packageName }
+            if (app?.isSystemApp == false && prefs.guardAllExternalApps.value) {
+                prefs.setGuardAllExternalApps(false)
+            }
+        } else {
+            prefs.removeWhitelistedSource(packageName)
+            val app = _installedApps.value.find { it.packageName == packageName }
+            if (app?.isSystemApp == true && prefs.whitelistSystemApps.value) {
+                prefs.setWhitelistSystemApps(false)
+            }
+        }
+    }
+
+    private fun checkAndUpdateSystemAppsWhitelistState() {
+        val systemApps = _installedApps.value.filter { it.isSystemApp }
+        if (systemApps.isNotEmpty()) {
+            val allWhitelisted = systemApps.all { prefs.isPackageWhitelisted(it.packageName) }
+            if (allWhitelisted && !prefs.whitelistSystemApps.value) {
+                prefs.setWhitelistSystemApps(true)
+            } else if (!allWhitelisted && prefs.whitelistSystemApps.value) {
+                prefs.setWhitelistSystemApps(false)
+            }
+        }
+    }
+
+    fun isPackageWhitelisted(packageName: String): Boolean {
+        return prefs.isPackageWhitelisted(packageName)
+    }
+
+    fun isPermanentWhitelisted(packageName: String): Boolean {
+        return prefs.isPermanentWhitelisted(packageName)
     }
 
     fun removeWhitelistedSource(packageName: String) {
         prefs.removeWhitelistedSource(packageName)
+    }
+
+    fun removeWhitelistedSources(packageNames: Collection<String>) {
+        prefs.removeWhitelistedSources(packageNames)
+        checkAndUpdateSystemAppsWhitelistState()
     }
 
     fun clearWhitelistedSources() {
@@ -419,7 +504,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val pm = getApplication<Application>().packageManager
                 val installed = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 installed.mapNotNull { appInfo ->
-                    if (appInfo.packageName == PreferencesManager.PERMANENT_WHITELISTED_PACKAGE) {
+                    if (appInfo.packageName == PreferencesManager.PERMANENT_WHITELISTED_PACKAGE ||
+                        appInfo.packageName == getApplication<Application>().packageName
+                    ) {
                         null
                     } else {
                         val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
@@ -433,6 +520,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }.sortedBy { it.appName.lowercase() }
             }
             _installedApps.value = apps
+            val installedPackageNames = apps.map { it.packageName }.toSet()
+            val currentGuarded = prefs.guardedPackages.value
+            val uninstalledGuarded = currentGuarded.filter { !installedPackageNames.contains(it) }
+            if (uninstalledGuarded.isNotEmpty()) {
+                prefs.removeGuardedPackages(uninstalledGuarded)
+            }
+            prefs.applyInstalledShoppingPresets(installedPackageNames)
+            val systemPackages = apps.filter { it.isSystemApp }.map { it.packageName }
+            if (systemPackages.isNotEmpty()) {
+                if (prefs.whitelistSystemApps.value) {
+                    val currentWhitelisted = prefs.whitelistedSourcePackages.value
+                    val missing = systemPackages.filter { !currentWhitelisted.contains(it) && !prefs.isPermanentWhitelisted(it) }
+                    if (missing.isNotEmpty()) {
+                        prefs.addWhitelistedSources(systemPackages)
+                    }
+                } else {
+                    checkAndUpdateSystemAppsWhitelistState()
+                }
+            }
+            val userPackages = apps.filter { !it.isSystemApp }.map { it.packageName }
+            if (userPackages.isNotEmpty()) {
+                if (prefs.guardAllExternalApps.value) {
+                    val currentGuarded = prefs.guardedPackages.value
+                    val missing = userPackages.filter { !currentGuarded.contains(it) && !prefs.isPermanentWhitelisted(it) }
+                    if (missing.isNotEmpty()) {
+                        prefs.addGuardedPackages(userPackages)
+                    }
+                } else {
+                    checkAndUpdateGuardAllState()
+                }
+            }
             _isLoadingApps.value = false
         }
     }

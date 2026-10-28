@@ -2,6 +2,19 @@
 
 All notable changes to Redirect Guard are documented in this file.
 
+## [v1.3](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.3) - 2026-10-29
+
+### Added
+- **Dedicated Applications View**: Added a dedicated Applications screen accessible directly from the bottom navigation bar to manage individual guard and whitelist protection for all installed apps.
+- **App Management Navigation Tab**: Added an Applications tab to the floating navigation bar with a badge counter displaying the number of installed guarded apps.
+- **App Search and Filter Chips**: Added instant search by app name or package identifier, along with filter chips for All, Guarded, Whitelisted, Shopping Presets, User Apps, and System Apps.
+- **Safety Confirmation Warnings**: Added confirmation dialogs before turning on Guard All External Apps and before turning off Whitelist System Apps to prevent accidental disruptions.
+- **Synchronized Global Toggles**: Global protection switches now automatically stay in sync with the app list when apps are turned on or off.
+- **Automatic Conflict Prevention**: Added automatic conflict handling so guarding an app removes it from the whitelist, and whitelisting an app removes it from the guarded list.
+- **Shopping Presets Restoration**: Added automatic restoration of installed shopping presets whenever Guard All External Apps is turned off.
+- **Installed App Verification**: Configured preset lists and badge counters to only count and display applications that are actually installed on the device.
+- **Streamlined Main Dashboard**: Moved global protection toggles to the Applications view and limited the dashboard whitelist card to user-installed external apps.
+
 ## [v1.2](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.2) - 2026-10-28
 
 ### Added

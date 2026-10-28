@@ -1,11 +1,6 @@
 name: Tester Release Build
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - "tester/**"
-      - ".github/workflows/tester.yml"
   workflow_dispatch:
 
 permissions:

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shield
@@ -47,6 +48,7 @@ fun M3ExpressiveFloatingToolbar(
     onSelectTab: (MainScreenTab) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    guardedCount: Int = 0,
     errorCount: Int = 0,
     totalLogsCount: Int = 0
 ) {
@@ -68,6 +70,14 @@ fun M3ExpressiveFloatingToolbar(
                 icon = Icons.Default.Shield,
                 label = "Dashboard",
                 onClick = { onSelectTab(MainScreenTab.DASHBOARD) }
+            )
+
+            FloatingToolbarTabItem(
+                selected = selectedTab == MainScreenTab.APPS,
+                icon = Icons.Default.Apps,
+                label = "Apps",
+                badgeCount = guardedCount,
+                onClick = { onSelectTab(MainScreenTab.APPS) }
             )
 
             FloatingToolbarTabItem(

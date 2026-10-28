@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://android.com"><img src="https://img.shields.io/badge/Platform-Android-34A853?style=flat-square" alt="Platform"></a>
-  <a href="https://github.com/rdevz-ph/RedirectGuard/releases"><img src="https://img.shields.io/badge/Version-v1.2-blue?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/rdevz-ph/RedirectGuard/releases"><img src="https://img.shields.io/badge/Version-v1.3-blue?style=flat-square" alt="Version"></a>
   <a href="https://developer.android.com/about/versions/nougat"><img src="https://img.shields.io/badge/Min%20SDK-24%20(Android%207.0)-0284C7?style=flat-square" alt="Min SDK"></a>
   <a href="https://developer.android.com/about/versions/15"><img src="https://img.shields.io/badge/Target%20SDK-35%2B-0284C7?style=flat-square" alt="Target SDK"></a>
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square" alt="Language"></a>
@@ -25,11 +25,13 @@ Are you tired of ads instantly redirecting you to apps like Shopee or Lazada wit
 Redirect Guard acts as a safety shield between your apps. When an ad, webpage, or link attempts to force-open an external application or deep link, Redirect Guard catches the redirect and gives you the choice to stay where you are or open the app.
 
 <p align="center">
-  <img src="docs/screenshots/Screenshot_1.jpg" alt="Redirect Guard Dashboard" width="31%">
+  <img src="docs/screenshots/Screenshot_1.jpg" alt="Redirect Guard Dashboard" width="23%">
   &nbsp;
-  <img src="docs/screenshots/Alert-Sample.jpg" alt="Redirect Guard Alert Prompt" width="31%">
+  <img src="docs/screenshots/Screenshot_2.jpg" alt="Redirect Guard Applications Management" width="23%">
   &nbsp;
-  <img src="docs/screenshots/Screenshot_2.jpg" alt="Redirect Guard Settings and Activity" width="31%">
+  <img src="docs/screenshots/Screenshot_3.jpg" alt="Redirect Guard Logs and Activity" width="23%">
+  &nbsp;
+  <img src="docs/screenshots/Alert-Sample.jpg" alt="Redirect Guard Alert Prompt" width="23%">
 </p>
 
 ## Features
@@ -42,6 +44,7 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
   - **Ask Confirmation**: Shows a prompt with app icons and names so you can confirm or block each redirect.
   - **Instant Auto-Return**: Automatically terminates the redirected app immediately without displaying a prompt.
 - **Smart Launcher and System App Whitelist**: Distinguishes between accidental redirects and intentional user actions. Launching apps from your home screen, app drawer, recent apps screen, or system utilities is never blocked.
+- **Dedicated Applications Management**: Search, filter, and customize guard and whitelist settings for individual user and system applications, complete with automatic preset restoration and conflict prevention.
 - **Guarded App Selection**: Guard specific shopping and external apps using built-in presets, or turn on full protection to guard against redirects to any external application.
 - **Activity Log**: Keep track of intercepted redirects, showing timestamps, source apps, target apps, and actions taken.
 - **Accessibility Service Health Checker**: Automatically detects if Android has stopped or desynced the background accessibility service, allowing you to force stop the app to clear stuck states, enable it with one tap through Shizuku, or open system accessibility settings directly.

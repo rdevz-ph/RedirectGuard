@@ -47,6 +47,11 @@ class PreferencesManager(private val context: Context) {
     )
     val whitelistSystemApps: StateFlow<Boolean> = _whitelistSystemApps.asStateFlow()
 
+    private val _disabledPresetPackages = MutableStateFlow(
+        prefs.getStringSet(KEY_DISABLED_PRESETS, emptySet()) ?: emptySet()
+    )
+    val disabledPresetPackages: StateFlow<Set<String>> = _disabledPresetPackages.asStateFlow()
+
     private val _showStatusNotification = MutableStateFlow(
         prefs.getBoolean(KEY_SHOW_STATUS_NOTIFICATION, true)
     )
@@ -170,9 +175,82 @@ class PreferencesManager(private val context: Context) {
         val updated = _guardedPackages.value.toMutableSet()
         if (guarded) {
             updated.add(packageName)
+            if (_whitelistedSourcePackages.value.contains(packageName)) {
+                val updatedWhitelisted = _whitelistedSourcePackages.value.toMutableSet()
+                updatedWhitelisted.remove(packageName)
+                prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updatedWhitelisted).apply()
+                _whitelistedSourcePackages.value = updatedWhitelisted
+            }
         } else {
             updated.remove(packageName)
         }
+        prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updated).apply()
+        _guardedPackages.value = updated
+
+        if (GuardedApp.DEFAULT_SHOPPING_PRESETS.any { it.packageName == packageName }) {
+            val updatedDisabled = _disabledPresetPackages.value.toMutableSet()
+            if (!guarded) {
+                updatedDisabled.add(packageName)
+            } else {
+                updatedDisabled.remove(packageName)
+            }
+            prefs.edit().putStringSet(KEY_DISABLED_PRESETS, updatedDisabled).apply()
+            _disabledPresetPackages.value = updatedDisabled
+        }
+
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
+    }
+
+    fun applyInstalledShoppingPresets(installedPackageNames: Set<String>, ignoreDisabled: Boolean = false) {
+        val presetPackages = GuardedApp.DEFAULT_SHOPPING_PRESETS
+            .map { it.packageName }
+            .filter { installedPackageNames.contains(it) && !isPermanentWhitelisted(it) }
+
+        if (ignoreDisabled) {
+            val updatedDisabled = _disabledPresetPackages.value.toMutableSet()
+            if (updatedDisabled.removeAll(presetPackages.toSet())) {
+                prefs.edit().putStringSet(KEY_DISABLED_PRESETS, updatedDisabled).apply()
+                _disabledPresetPackages.value = updatedDisabled
+            }
+        }
+
+        val disabled = if (ignoreDisabled) emptySet() else _disabledPresetPackages.value
+        val whitelisted = _whitelistedSourcePackages.value
+        val toEnable = presetPackages.filter { !disabled.contains(it) && !whitelisted.contains(it) }
+
+        if (toEnable.isNotEmpty()) {
+            val updated = _guardedPackages.value.toMutableSet()
+            if (updated.addAll(toEnable)) {
+                prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updated).apply()
+                _guardedPackages.value = updated
+                com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
+            }
+        }
+    }
+
+    fun addGuardedPackages(packageNames: Collection<String>) {
+        if (packageNames.isEmpty()) return
+        val nonPermanent = packageNames.filter { !isPermanentWhitelisted(it) }
+        val updated = _guardedPackages.value.toMutableSet()
+        updated.addAll(nonPermanent)
+        prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updated).apply()
+        _guardedPackages.value = updated
+
+        val whitelisted = _whitelistedSourcePackages.value
+        val toRemoveFromWhitelist = nonPermanent.filter { whitelisted.contains(it) }
+        if (toRemoveFromWhitelist.isNotEmpty()) {
+            val updatedWhitelisted = whitelisted.toMutableSet()
+            updatedWhitelisted.removeAll(toRemoveFromWhitelist.toSet())
+            prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updatedWhitelisted).apply()
+            _whitelistedSourcePackages.value = updatedWhitelisted
+        }
+        com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
+    }
+
+    fun removeGuardedPackages(packageNames: Collection<String>) {
+        if (packageNames.isEmpty()) return
+        val updated = _guardedPackages.value.toMutableSet()
+        updated.removeAll(packageNames.toSet())
         prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updated).apply()
         _guardedPackages.value = updated
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
@@ -191,16 +269,36 @@ class PreferencesManager(private val context: Context) {
     }
 
     fun addWhitelistedSource(packageName: String) {
+        addWhitelistedSources(listOf(packageName))
+    }
+
+    fun addWhitelistedSources(packageNames: Collection<String>) {
+        if (packageNames.isEmpty()) return
         val updated = _whitelistedSourcePackages.value.toMutableSet()
-        updated.add(packageName)
+        updated.addAll(packageNames)
         prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updated).apply()
         _whitelistedSourcePackages.value = updated
+
+        val guarded = _guardedPackages.value
+        val toUnguard = packageNames.filter { guarded.contains(it) }
+        if (toUnguard.isNotEmpty()) {
+            val updatedGuarded = guarded.toMutableSet()
+            updatedGuarded.removeAll(toUnguard.toSet())
+            prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, updatedGuarded).apply()
+            _guardedPackages.value = updatedGuarded
+            com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(context)
+        }
     }
 
     fun removeWhitelistedSource(packageName: String) {
-        if (isPermanentWhitelisted(packageName)) return
+        removeWhitelistedSources(listOf(packageName))
+    }
+
+    fun removeWhitelistedSources(packageNames: Collection<String>) {
+        if (packageNames.isEmpty()) return
         val updated = _whitelistedSourcePackages.value.toMutableSet()
-        updated.remove(packageName)
+        val toRemove = packageNames.filter { !isPermanentWhitelisted(it) }
+        updated.removeAll(toRemove.toSet())
         prefs.edit().putStringSet(KEY_WHITELISTED_PACKAGES, updated).apply()
         _whitelistedSourcePackages.value = updated
     }
@@ -208,6 +306,7 @@ class PreferencesManager(private val context: Context) {
     fun clearWhitelistedSources() {
         prefs.edit().remove(KEY_WHITELISTED_PACKAGES).apply()
         _whitelistedSourcePackages.value = emptySet()
+        setWhitelistSystemApps(false)
     }
 
     fun addRedirectRecord(record: RedirectRecord) {
@@ -245,16 +344,10 @@ class PreferencesManager(private val context: Context) {
 
     private fun getSavedGuardedPackages(): Set<String> {
         val saved = prefs.getStringSet(KEY_GUARDED_PACKAGES, null)
-        val defaultSet = GuardedApp.DEFAULT_SHOPPING_PRESETS
-            .filter { it.packageName != PERMANENT_WHITELISTED_PACKAGE }
-            .map { it.packageName }
-            .toSet()
         if (saved != null) {
-            // Automatically include built-in presets so new preset additions take effect
-            return (saved + defaultSet).filter { it != PERMANENT_WHITELISTED_PACKAGE }.toSet()
+            return saved.filter { it != PERMANENT_WHITELISTED_PACKAGE }.toSet()
         }
-        prefs.edit().putStringSet(KEY_GUARDED_PACKAGES, defaultSet).apply()
-        return defaultSet
+        return emptySet()
     }
 
     private fun getSavedWhitelistedPackages(): Set<String> {
@@ -342,6 +435,7 @@ class PreferencesManager(private val context: Context) {
         private const val KEY_LOG_FILTER_DEBUG = "log_filter_debug"
         private const val KEY_LOG_FILTER_ERRORS = "log_filter_errors"
         private const val KEY_LOG_FILTER_WARNINGS = "log_filter_warnings"
+        private const val KEY_DISABLED_PRESETS = "disabled_presets"
         private const val MAX_HISTORY_ITEMS = 50
     }
 }

@@ -1,15 +1,17 @@
-# Redirect Guard v1.2
+# Redirect Guard v1.3
 
-### What's New in v1.2
+### What's New in v1.3
 
 #### Added
-- **Material 3 Expressive Floating Toolbar**: Added a floating pill toolbar at the bottom of the screen with animated tab switching between the main dashboard and the logs view.
-- **Dedicated Logs and Debug View**: Moved interception records into a dedicated logs view that records live app events, debug logs (Log.d), error logs (Log.e), and warning logs (Log.w).
-- **Log Filter Toggles**: Added filter chips to independently toggle redirects, debug logs, error logs, and warning logs.
-- **Persistent Log Filters**: The app now saves your chosen log filter preferences across restarts and stops recording disabled log levels into memory.
-- **Log Search and Export**: Added a real-time search field to filter logs by text, package, or link, along with a copy button that formats all visible logs with timestamps to your clipboard.
-- **Crash Handler and Reporter**: Added an automated crash reporter running in an isolated process that displays exception details and provides a direct shortcut to open an issue on GitHub.
-- **Readable Stack Traces**: Configured release build rules to preserve source file names and line numbers so crash stack traces remain readable.
+- **Dedicated Applications View**: Added a dedicated Applications screen accessible directly from the bottom navigation bar to manage individual guard and whitelist protection for all installed apps.
+- **App Management Navigation Tab**: Added an Applications tab to the floating navigation bar with a badge counter displaying the number of installed guarded apps.
+- **App Search and Filter Chips**: Added instant search by app name or package identifier, along with filter chips for All, Guarded, Whitelisted, Shopping Presets, User Apps, and System Apps.
+- **Safety Confirmation Warnings**: Added confirmation dialogs before turning on Guard All External Apps and before turning off Whitelist System Apps to prevent accidental disruptions.
+- **Synchronized Global Toggles**: Global protection switches now automatically stay in sync with the app list when apps are turned on or off.
+- **Automatic Conflict Prevention**: Added automatic conflict handling so guarding an app removes it from the whitelist, and whitelisting an app removes it from the guarded list.
+- **Shopping Presets Restoration**: Added automatic restoration of installed shopping presets whenever Guard All External Apps is turned off.
+- **Installed App Verification**: Configured preset lists and badge counters to only count and display applications that are actually installed on the device.
+- **Streamlined Main Dashboard**: Moved global protection toggles to the Applications view and limited the dashboard whitelist card to user-installed external apps.
 
 For full version history and previous release notes, see [CHANGELOG.md](https://github.com/rdevz-ph/RedirectGuard/blob/main/CHANGELOG.md).
 
@@ -17,6 +19,10 @@ For full version history and previous release notes, see [CHANGELOG.md](https://
 - Deep link and app redirect interception using Android Accessibility Service
 - Choice between Confirmation Prompt and Instant Auto-Return modes
 - Reliable process termination for intercepted apps via Shizuku
+- Dedicated Applications screen with search and category filters (All, Guarded, Whitelisted, Shopping Presets, User Apps, System)
+- Automatic sync between global protection switches and individual application settings
+- Automatic conflict resolution between guarded and whitelisted applications
+- Smart shopping presets that adapt to installed apps on the device
 - Automatic exclusion for home screens, app drawers, and system components
 - Guarded app selection with presets for common shopping apps
 - Interactive confirmation dialog with safety timer

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BugReport
@@ -76,6 +77,7 @@ import com.rdevzph.redirectguard.model.GuardedApp
 import com.rdevzph.redirectguard.model.InterceptionMode
 import com.rdevzph.redirectguard.model.InterceptionStrategy
 import com.rdevzph.redirectguard.model.RedirectAction
+import com.rdevzph.redirectguard.ui.components.AppsView
 import com.rdevzph.redirectguard.ui.components.LogsView
 import com.rdevzph.redirectguard.ui.components.M3ExpressiveFloatingToolbar
 import com.rdevzph.redirectguard.ui.components.StatusCard
@@ -128,15 +130,19 @@ fun MainScreen(
     val logSearchQuery by viewModel.logSearchQuery.collectAsState()
 
     var showLimitationsDialog by remember { mutableStateOf(false) }
-    var showAppPickerModal by remember { mutableStateOf(false) }
-    var appSearchQuery by remember { mutableStateOf("") }
+    var showGuardAllWarningDialog by remember { mutableStateOf(false) }
+    var showDisableWhitelistWarningDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = if (selectedTab == MainScreenTab.DASHBOARD) "Redirect Guard" else "Logs & Activity",
+                        text = when (selectedTab) {
+                            MainScreenTab.DASHBOARD -> "Redirect Guard"
+                            MainScreenTab.APPS -> "Applications"
+                            MainScreenTab.LOGS -> "Logs & Activity"
+                        },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -529,6 +535,7 @@ fun MainScreen(
                                     }
                                 }
                             }
+
                         }
                     }
                 }
@@ -722,19 +729,18 @@ fun MainScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    TextButton(onClick = { showAppPickerModal = true }) {
+                    TextButton(onClick = { viewModel.selectTab(MainScreenTab.APPS) }) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Add App")
+                        Text(text = "Manage Apps")
                     }
                 }
             }
 
-            // Preset shopping apps list
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -750,107 +756,48 @@ fun MainScreen(
                             .fillMaxWidth()
                             .padding(18.dp)
                     ) {
-                        // Whitelist System Apps toggle
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Whitelist System Apps",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "Ignore built-in apps and panels (such as Smart Panel, Settings, System UI)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Switch(
-                                checked = whitelistSystemApps,
-                                onCheckedChange = { viewModel.toggleWhitelistSystemApps(it) }
-                            )
-                        }
-
+                        val installedGuardedCount = installedApps.count { guardedPackages.contains(it.packageName) }
+                        Text(
+                            text = if (installedGuardedCount > 0) {
+                                "${installedGuardedCount} application" + (if (installedGuardedCount > 1) "s" else "") + " currently guarded against external redirects."
+                            } else {
+                                "No applications are currently guarded."
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Manage guard and whitelist settings for installed applications in the Applications tab.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        // Guard All Apps toggle
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        OutlinedButton(
+                            onClick = { viewModel.selectTab(MainScreenTab.APPS) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Guard All External Apps",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "Intercept transitions to any external app, not just shopping apps",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Apps,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Switch(
-                                checked = guardAllExternalApps,
-                                onCheckedChange = { viewModel.toggleGuardAll(it) }
-                            )
-                        }
-
-                        if (!guardAllExternalApps) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Shopping App Presets",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            GuardedApp.DEFAULT_SHOPPING_PRESETS.forEach { preset ->
-                                val isChecked = guardedPackages.contains(preset.packageName)
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            viewModel.togglePackageGuarded(preset.packageName, !isChecked)
-                                        }
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = preset.appName,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = preset.packageName,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    Switch(
-                                        checked = isChecked,
-                                        onCheckedChange = {
-                                            viewModel.togglePackageGuarded(preset.packageName, it)
-                                        }
-                                    )
-                                }
-                            }
+                            Text("Manage in Applications")
                         }
                     }
                 }
             }
 
-            // Whitelisted Sources Section
-            if (whitelistedPackages.isNotEmpty()) {
+            val userWhitelistedPackages = whitelistedPackages.filter { pkg ->
+                val app = installedApps.find { it.packageName == pkg }
+                app != null && !app.isSystemApp
+            }
+
+            // Whitelisted Sources Section (External User Apps Only)
+            if (userWhitelistedPackages.isNotEmpty()) {
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -858,12 +805,12 @@ fun MainScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Whitelisted Sources (${whitelistedPackages.size})",
+                            text = "Whitelisted Sources (${userWhitelistedPackages.size})",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        TextButton(onClick = { viewModel.clearWhitelistedSources() }) {
+                        TextButton(onClick = { viewModel.removeWhitelistedSources(userWhitelistedPackages) }) {
                             Text("Clear All")
                         }
                     }
@@ -886,7 +833,9 @@ fun MainScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-                            whitelistedPackages.forEach { pkg ->
+                            userWhitelistedPackages.take(5).forEach { pkg ->
+                                val appItem = installedApps.find { it.packageName == pkg }
+                                val appName = appItem?.appName ?: if (pkg == "com.android.chrome") "Google Chrome" else pkg
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -896,7 +845,7 @@ fun MainScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = if (pkg == "com.android.chrome") "Google Chrome" else pkg,
+                                            text = appName,
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -915,6 +864,16 @@ fun MainScreen(
                                     }
                                 }
                             }
+
+                            if (userWhitelistedPackages.size > 5) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(
+                                    onClick = { viewModel.selectTab(MainScreenTab.APPS) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("View all ${userWhitelistedPackages.size} in Applications tab")
+                                }
+                            }
                         }
                     }
                 }
@@ -922,6 +881,35 @@ fun MainScreen(
 
                         item { Spacer(modifier = Modifier.height(24.dp)) }
                     }
+                }
+                MainScreenTab.APPS -> {
+                    AppsView(
+                        installedApps = installedApps,
+                        guardedPackages = guardedPackages,
+                        whitelistedPackages = whitelistedPackages,
+                        whitelistSystemApps = whitelistSystemApps,
+                        guardAllExternalApps = guardAllExternalApps,
+                        onToggleWhitelistSystemApps = { isChecked ->
+                            if (!isChecked) {
+                                showDisableWhitelistWarningDialog = true
+                            } else {
+                                viewModel.toggleWhitelistSystemApps(true)
+                            }
+                        },
+                        onToggleGuardAll = { isChecked ->
+                            if (isChecked) {
+                                showGuardAllWarningDialog = true
+                            } else {
+                                viewModel.toggleGuardAll(false)
+                            }
+                        },
+                        onToggleGuarded = { pkg, guarded -> viewModel.togglePackageGuarded(pkg, guarded) },
+                        onToggleWhitelisted = { pkg, whitelisted -> viewModel.togglePackageWhitelisted(pkg, whitelisted) },
+                        isPackageWhitelisted = { viewModel.isPackageWhitelisted(it) },
+                        isPermanentWhitelisted = { viewModel.isPermanentWhitelisted(it) },
+                        isLoading = isLoadingApps,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
                 MainScreenTab.LOGS -> {
                     LogsView(
@@ -943,6 +931,7 @@ fun MainScreen(
                 }
             }
 
+            val installedGuardedCount = installedApps.count { guardedPackages.contains(it.packageName) }
             val visibleErrorCount = if (showErrorLogs) appLogs.count { it.level == LogLevel.ERROR } else 0
             val visibleLogsCount = (if (showRedirectLogs) recentRedirects.size else 0) +
                 appLogs.count { entry ->
@@ -958,6 +947,7 @@ fun MainScreen(
                 selectedTab = selectedTab,
                 onSelectTab = { viewModel.selectTab(it) },
                 onRefresh = { viewModel.refreshStatus() },
+                guardedCount = installedGuardedCount,
                 errorCount = visibleErrorCount,
                 totalLogsCount = visibleLogsCount,
                 modifier = Modifier
@@ -1135,107 +1125,93 @@ fun MainScreen(
         )
     }
 
-    // App Picker Dialog
-    if (showAppPickerModal) {
+    // Warning dialog before enabling Guard All External Apps
+    if (showGuardAllWarningDialog) {
         AlertDialog(
-            onDismissRequest = { showAppPickerModal = false },
+            onDismissRequest = { showGuardAllWarningDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
             title = {
                 Text(
-                    text = "Add Application to Guard List",
+                    text = "Enable Guard All External Apps?",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(380.dp)
-                ) {
-                    OutlinedTextField(
-                        value = appSearchQuery,
-                        onValueChange = { appSearchQuery = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Search installed apps") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null
-                            )
-                        },
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    val filteredApps = installedApps.filter {
-                        it.appName.contains(appSearchQuery, ignoreCase = true) ||
-                                it.packageName.contains(appSearchQuery, ignoreCase = true)
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(filteredApps) { app ->
-                            val isGuarded = guardedPackages.contains(app.packageName)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.togglePackageGuarded(app.packageName, !isGuarded)
-                                    }
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = app.appName,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false)
-                                        )
-                                        if (app.isSystemApp) {
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = MaterialTheme.colorScheme.surfaceVariant
-                                            ) {
-                                                Text(
-                                                    text = "System",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.outline,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                    Text(
-                                        text = app.packageName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Switch(
-                                    checked = isGuarded,
-                                    onCheckedChange = {
-                                        viewModel.togglePackageGuarded(app.packageName, it)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                Text(
+                    text = "Guard All External Apps intercepts transitions to every external application on your device.\n\nThis can block legitimate app redirects and shortcuts, such as tapping notification messages in Messenger or opening browser logins inside games.\n\nIf you use apps or games that rely on redirects, keep this option disabled and guard only suspicious apps instead.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             },
             confirmButton = {
-                TextButton(onClick = { showAppPickerModal = false }) {
-                    Text("Done")
+                TextButton(
+                    onClick = {
+                        viewModel.toggleGuardAll(true)
+                        showGuardAllWarningDialog = false
+                    }
+                ) {
+                    Text("Enable Anyway")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showGuardAllWarningDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Warning dialog before disabling Whitelist System Apps
+    if (showDisableWhitelistWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisableWhitelistWarningDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = {
+                Text(
+                    text = "Disable System Apps Whitelist?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Disabling this removes redirect protection exemptions for all built-in system applications.\n\nSystem transitions (such as opening Settings, System UI panels, or system dialogs) may be intercepted, potentially causing unexpected app closures.\n\nWe recommend keeping system apps whitelisted for device stability.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.toggleWhitelistSystemApps(false)
+                        showDisableWhitelistWarningDialog = false
+                    }
+                ) {
+                    Text("Disable Anyway", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDisableWhitelistWarningDialog = false
+                    }
+                ) {
+                    Text("Cancel")
                 }
             }
         )

@@ -40,6 +40,9 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
   <a href="https://github.com/rdevz-ph/RedirectGuard/releases/latest">
     <img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="75">
   </a>
+  <a href="https://awesome-shizuku.vercel.app/apps/redirectguard">
+    <img src="https://awesome-shizuku.vercel.app/get-it-on-shizustore.png" alt="Get it on ShizuStore" height="75">
+  </a>
 </p>
 
 ## Features

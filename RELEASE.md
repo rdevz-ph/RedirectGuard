@@ -11,6 +11,7 @@
 - **Crash Handler and Reporter**: Added an automated crash reporter running in an isolated process that displays exception details and provides a direct shortcut to open an issue on GitHub.
 - **Readable Stack Traces**: Configured release build rules to preserve source file names and line numbers so crash stack traces remain readable.
 
+For full version history and previous release notes, see [CHANGELOG.md](https://github.com/rdevz-ph/RedirectGuard/blob/main/CHANGELOG.md).
 
 ### Features
 - Deep link and app redirect interception using Android Accessibility Service

@@ -118,6 +118,10 @@ To compile and install the tester companion app:
    ./gradlew :tester:installDebug
    ```
 
+## Privacy Policy
+
+Redirect Guard for Android operates completely offline. It does not collect, monitor, or transmit any personal data. You can read the full policy at [Privacy Policy](https://rdevz-ph.github.io/RedirectGuard/privacy.html).
+
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.

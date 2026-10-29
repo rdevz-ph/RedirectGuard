@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirect Guard for Android - Stop Unwanted Ad Redirects & Deep Links</title>
+
+  <!-- SEO & Social Meta -->
+  <meta name="description"
+    content="An open-source Android tool that helps prevent unwanted ad redirects and deep links to external apps, with permission prompts and automatic return to the previous app.">
+  <meta name="keywords"
+    content="Redirect Guard, Android, Ad Redirects, Deep Links, Accessibility Service, Shizuku, Material Design 3, Open Source, Shopee, Lazada">
+  <meta name="author" content="Romel (rdevz-ph)">
+
+  <meta property="og:title" content="Redirect Guard for Android - Stop Unwanted Ad Redirects & Deep Links">
+  <meta property="og:description"
+    content="An open-source Android tool that helps prevent unwanted ad redirects and deep links to external apps, with permission prompts and automatic return to the previous app.">
+  <meta property="og:image" content="social_preview.png">
+  <meta property="og:type" content="website">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+
+  <!-- Google Fonts: Roboto & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Material Symbols Outlined -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+
+  <!-- Material Web Components (M3) Import Map via CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@material/web/": "https://esm.run/@material/web/"
+      }
+    }
+  </script>
+  <script type="module">
+    import '@material/web/all.js';
+    import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+    try {
+      document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    } catch (_) {}
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Top App Bar (Material 3 Header) -->
+  <header class="m3-top-app-bar">
+    <div class="container header-content">
+      <a href="#" class="brand-link">
+        <img src="assets/icon.png" alt="Redirect Guard Icon" class="brand-icon">
+        <div class="brand-title">
+          Redirect Guard
+          <span class="brand-badge">Android</span>
+        </div>
+      </a>
+
+      <!-- Center M3 Primary Tabs Navigation -->
+      <div class="header-nav-tabs">
+        <md-tabs active-tab-index="0" id="main-nav-tabs">
+          <md-primary-tab id="tab-overview" data-target="overview">
+            <span slot="icon" class="material-symbols-outlined">dashboard</span>
+            Overview
+          </md-primary-tab>
+          <md-primary-tab id="tab-screenshots" data-target="screenshots">
+            <span slot="icon" class="material-symbols-outlined">photo_library</span>
+            Screenshots
+          </md-primary-tab>
+          <md-primary-tab id="tab-whats-new" data-target="whats-new">
+            <span slot="icon" class="material-symbols-outlined">new_releases</span>
+            What's New
+          </md-primary-tab>
+          <md-primary-tab id="tab-features" data-target="features">
+            <span slot="icon" class="material-symbols-outlined">featured_play_list</span>
+            Features
+          </md-primary-tab>
+          <md-primary-tab id="tab-specs" data-target="specs">
+            <span slot="icon" class="material-symbols-outlined">info</span>
+            Specifications
+          </md-primary-tab>
+        </md-tabs>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="nav-actions">
+        <!-- Theme Switcher (Dark / AMOLED / Light) -->
+        <md-icon-button id="theme-toggle-btn" aria-label="Toggle Theme" title="Theme (Dark / AMOLED / Light)">
+          <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+        </md-icon-button>
+
+        <md-outlined-button href="https://github.com/rdevz-ph/RedirectGuard" target="_blank"
+          rel="noopener noreferrer" id="nav-github-btn">
+          <svg slot="icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub
+        </md-outlined-button>
+
+        <md-filled-button href="https://github.com/rdevz-ph/RedirectGuard/releases/latest" id="nav-download-btn">
+          <span slot="icon" class="material-symbols-outlined">download</span>
+          Download APK
+        </md-filled-button>
+
+        <!-- Mobile Menu Button -->
+        <md-icon-button id="mobile-menu-btn" aria-label="Open Navigation Menu" title="Menu" class="mobile-only">
+          <span class="material-symbols-outlined">menu</span>
+        </md-icon-button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="mobile-drawer-scrim" id="mobile-drawer-scrim" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Navigation Drawer">
+    <div class="drawer-header">
+      <div class="drawer-brand">
+        <img src="assets/icon.png" alt="Redirect Guard Icon" class="brand-icon">
+        <div class="brand-title">
+          Redirect Guard
+          <span class="brand-badge">Android</span>
+        </div>
+      </div>
+      <md-icon-button id="drawer-close-btn" aria-label="Close Navigation Drawer">
+        <span class="material-symbols-outlined">close</span>
+      </md-icon-button>
+    </div>
+
+    <div class="drawer-divider"></div>
+
+    <nav class="drawer-nav">
+      <a href="#overview" class="drawer-item active" data-target="overview">
+        <span class="material-symbols-outlined drawer-icon">dashboard</span>
+        <span class="drawer-label">Overview</span>
+      </a>
+      <a href="#screenshots" class="drawer-item" data-target="screenshots">
+        <span class="material-symbols-outlined drawer-icon">photo_library</span>
+        <span class="drawer-label">Screenshots</span>
+      </a>
+      <a href="#whats-new" class="drawer-item" data-target="whats-new">
+        <span class="material-symbols-outlined drawer-icon">new_releases</span>
+        <span class="drawer-label">What's New</span>
+      </a>
+      <a href="#features" class="drawer-item" data-target="features">
+        <span class="material-symbols-outlined drawer-icon">featured_play_list</span>
+        <span class="drawer-label">Features</span>
+      </a>
+      <a href="#specs" class="drawer-item" data-target="specs">
+        <span class="material-symbols-outlined drawer-icon">info</span>
+        <span class="drawer-label">Specifications</span>
+      </a>
+    </nav>
+
+    <div class="drawer-divider"></div>
+
+    <div class="drawer-footer-actions">
+      <md-filled-button href="https://github.com/rdevz-ph/RedirectGuard/releases/latest" id="drawer-download-btn">
+        <span slot="icon" class="material-symbols-outlined">download</span>
+        Download APK
+      </md-filled-button>
+      <md-outlined-button href="https://github.com/rdevz-ph/RedirectGuard" target="_blank"
+        rel="noopener noreferrer" id="drawer-github-btn">
+        <svg slot="icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        GitHub Repository
+      </md-outlined-button>
+    </div>
+  </aside>
+
+  <!-- Hero Section -->
+  <main class="hero-section" id="overview">
+    <div class="container">
+      <div class="hero-card">
+        <div class="hero-top">
+          <div class="app-icon-wrapper">
+            <img src="assets/icon.png" alt="Redirect Guard App Icon" class="app-icon">
+          </div>
+
+          <div class="hero-info">
+            <div class="app-title-row">
+              <h1 class="app-name">Redirect Guard</h1>
+              <span class="brand-badge" id="hero-version-chip">v1.3 (Latest)</span>
+            </div>
+
+            <div class="app-developer">
+              by <span>rdevz-ph</span>
+              <svg class="verified-icon" viewBox="0 0 24 24" aria-label="Verified Developer">
+                <circle cx="12" cy="12" r="10" fill="#0ea5e9" />
+                <path d="m8.5 12.3 2.5 2.5 5-5" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+              <span>• Tools & Utilities</span>
+            </div>
+
+            <p class="app-summary">
+              An open-source Android tool that helps prevent unwanted ad redirects and deep links to external apps, with permission prompts and automatic return to the previous app.
+            </p>
+
+            <!-- Assist Chips Row -->
+            <md-chip-set class="badge-row">
+              <md-assist-chip label="100% Open Source (Apache 2.0)">
+                <span slot="icon" class="material-symbols-outlined">verified_user</span>
+              </md-assist-chip>
+              <md-assist-chip label="Zero Tracking & Ads">
+                <span slot="icon" class="material-symbols-outlined">block</span>
+              </md-assist-chip>
+              <md-assist-chip label="Shizuku & Accessibility">
+                <span slot="icon" class="material-symbols-outlined">security</span>
+              </md-assist-chip>
+              <md-assist-chip label="Android 7.0+ (API 24+)">
+                <span slot="icon" class="material-symbols-outlined">smartphone</span>
+              </md-assist-chip>
+              <md-assist-chip id="hero-downloads-chip" class="highlight-chip" label="Downloads"
+                href="https://github.com/rdevz-ph/RedirectGuard/releases" target="_blank">
+                <span slot="icon" class="material-symbols-outlined">download</span>
+              </md-assist-chip>
+            </md-chip-set>
+
+            <!-- Action Buttons -->
+            <div class="hero-actions">
+              <md-filled-button href="https://github.com/rdevz-ph/RedirectGuard/releases/latest"
+                id="main-download-btn">
+                <span slot="icon" class="material-symbols-outlined">download</span>
+                <span>Download APK</span>
+                <span class="btn-badge" id="apk-size-pill" style="display: none;"></span>
+              </md-filled-button>
+
+              <md-outlined-button href="https://github.com/rdevz-ph/RedirectGuard" target="_blank"
+                rel="noopener noreferrer">
+                <svg slot="icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                Source Code
+              </md-outlined-button>
+
+              <md-outlined-button id="share-btn">
+                <span slot="icon" class="material-symbols-outlined">share</span>
+                Share
+              </md-outlined-button>
+            </div>
+
+            <!-- Store Badges Row -->
+            <div class="store-badges-row">
+              <a href="https://github.com/rdevz-ph/RedirectGuard/releases/latest" title="Get it on GitHub" target="_blank" rel="noopener noreferrer">
+                <img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png"
+                  alt="Get it on GitHub">
+              </a>
+              <a href="https://awesome-shizuku.vercel.app/apps/redirectguard" title="Get it on ShizuStore" target="_blank" rel="noopener noreferrer">
+                <img src="https://awesome-shizuku.vercel.app/get-it-on-shizustore.png" alt="Get it on ShizuStore">
+              </a>
+            </div>
+
+            <!-- Material Design 3 Alert Callout -->
+            <div class="m3-alert m3-alert-warning" role="note">
+              <div class="m3-alert-header">
+                <span class="material-symbols-outlined m3-alert-icon">warning</span>
+                <span class="m3-alert-title">Important Note on Window Detection</span>
+              </div>
+              <div class="m3-alert-body">
+                Redirect Guard uses Android Accessibility Service and Shizuku to detect unwanted app launches and immediately terminate redirected processes. Because Android window detection happens after an app begins to open, a redirected app may briefly appear on screen before being closed.
+              </div>
+            </div>
+
+            <div class="m3-alert m3-alert-tip" role="note">
+              <div class="m3-alert-header">
+                <span class="material-symbols-outlined m3-alert-icon">check_circle</span>
+                <span class="m3-alert-title">Testing with Redirect Tester Companion</span>
+              </div>
+              <div class="m3-alert-body">
+                Want to test or verify app functionality? Please use <strong>Redirect Tester</strong> (<code>RedirectGuardTester-*-release.zip</code>), an optional companion tool packaged as a ZIP archive to safely test common shopping app redirects. Extract the ZIP archive to find and install the companion tester APK.
+              </div>
+            </div>
+
+            <div class="download-note" id="download-note">
+              <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+              <span>Direct APK release • Also available on <a
+                  href="https://github.com/rdevz-ph/RedirectGuard/releases/latest" target="_blank"
+                  rel="noopener noreferrer">GitHub Releases</a> and <a
+                  href="https://awesome-shizuku.vercel.app/apps/redirectguard" target="_blank"
+                  rel="noopener noreferrer">ShizuStore</a></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats Strip -->
+        <div class="stats-strip">
+          <div class="stat-item">
+            <div class="stat-value" id="stat-downloads">
+              <span class="material-symbols-outlined" style="color: var(--md-sys-color-primary);">download</span>
+              <span id="stat-downloads-val">--</span>
+            </div>
+            <div class="stat-label">Downloads</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value" id="stat-version">v1.3</div>
+            <div class="stat-label">Version</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">Android 7.0+</div>
+            <div class="stat-label">Requires</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">Apache 2.0</div>
+            <div class="stat-label">License</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">No Root</div>
+            <div class="stat-label">Shizuku Ready</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Screenshots Carousel Section -->
+  <section class="section" id="screenshots">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-subtitle">Visual Preview</span>
+          <h2 class="section-title">App Screenshots & Interface</h2>
+        </div>
+        <div class="gallery-nav">
+          <md-outlined-icon-button id="scroll-prev" aria-label="Previous screenshot">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </md-outlined-icon-button>
+          <md-outlined-icon-button id="scroll-next" aria-label="Next screenshot">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </md-outlined-icon-button>
+        </div>
+      </div>
+
+      <div class="gallery-scroll-container" id="gallery-container">
+        <!-- Screenshot 1 -->
+        <div class="gallery-item" data-full="screenshots/Screenshot_1.jpg">
+          <div class="gallery-img-wrap">
+            <img src="screenshots/Screenshot_1.jpg" alt="Redirect Guard Dashboard" loading="lazy">
+          </div>
+          <div class="gallery-caption">1. Main Dashboard & Guard Status</div>
+        </div>
+
+        <!-- Screenshot 2 -->
+        <div class="gallery-item" data-full="screenshots/Screenshot_2.jpg">
+          <div class="gallery-img-wrap">
+            <img src="screenshots/Screenshot_2.jpg" alt="Applications Management" loading="lazy">
+          </div>
+          <div class="gallery-caption">2. Dedicated Applications Screen</div>
+        </div>
+
+        <!-- Screenshot 3 -->
+        <div class="gallery-item" data-full="screenshots/Screenshot_3.jpg">
+          <div class="gallery-img-wrap">
+            <img src="screenshots/Screenshot_3.jpg" alt="Activity Logs" loading="lazy">
+          </div>
+          <div class="gallery-caption">3. Interception Logs & Search</div>
+        </div>
+
+        <!-- Screenshot 4 -->
+        <div class="gallery-item" data-full="screenshots/Alert-Sample.jpg">
+          <div class="gallery-img-wrap">
+            <img src="screenshots/Alert-Sample.jpg" alt="Confirmation Prompt Dialog" loading="lazy">
+          </div>
+          <div class="gallery-caption">4. Permission Confirmation Alert</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What's New Section -->
+  <section class="section" id="whats-new">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-subtitle">Changelogs</span>
+          <h2 class="section-title">Release Notes & Version History</h2>
+        </div>
+      </div>
+
+      <div class="changelogs-card">
+        <div class="changelogs-list" id="changelogs-container">
+          <!-- Dynamically populated from changelogs.txt / changelogs.js -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Features Grid -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-subtitle">Core Capabilities</span>
+          <h2 class="section-title">Take Back Control Over App Transitions</h2>
+        </div>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon-box blue">
+            <span class="material-symbols-outlined">checklist</span>
+          </div>
+          <h4>Dedicated Setup Wizard</h4>
+          <p>Guides first-time configuration with an interactive checklist to verify permissions before entering the dashboard, complete with one-tap configuration via Shizuku.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-icon-box green">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
+          <h4>Permission Confirmation Prompt</h4>
+          <p>Displays an interactive alert dialog asking whether you want to open the target app or remain in your current app, complete with a safety countdown timer.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon-box blue">
+            <span class="material-symbols-outlined">link_off</span>
+          </div>
+          <h4>Deep Link Interception</h4>
+          <p>Catches unauthorized deep links triggered by web banners, embedded advertisements, and redirect scripts before they take over your screen.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon-box green">
+            <span class="material-symbols-outlined">terminal</span>
+          </div>
+          <h4>Process Termination via Shizuku</h4>
+          <p>Uses elevated Shizuku shell access to terminate unwanted external application processes directly, safely returning you to your originating app.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon-box blue">
+            <span class="material-symbols-outlined">swap_horiz</span>
+          </div>
+          <h4>Two Interception Modes</h4>
+          <p>Choose between <strong>Ask Confirmation</strong> for manual control with app icons and names, or <strong>Instant Auto-Return</strong> for automatic instant termination without prompts.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon-box green">
+            <span class="material-symbols-outlined">apps</span>
+          </div>
+          <h4>Dedicated Applications Screen</h4>
+          <p>Search, filter, and customize guard and whitelist settings for individual installed applications with instant package search and category filter chips.</p>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div class="feature-icon-box blue">
+            <span class="material-symbols-outlined">rule</span>
+          </div>
+          <h4>Conflict Prevention & Presets</h4>
+          <p>Guarding an app automatically removes it from the whitelist and vice versa. Presets for shopping apps restore seamlessly when global guard is toggled off.</p>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div class="feature-icon-box green">
+            <span class="material-symbols-outlined">verified_user</span>
+          </div>
+          <h4>Smart Launcher Whitelist</h4>
+          <p>Intelligently distinguishes between accidental ad redirects and intentional launches. Opening apps from home screens, app drawers, or recent apps is never blocked.</p>
+        </div>
+
+        <!-- Feature 9 -->
+        <div class="feature-card">
+          <div class="feature-icon-box blue">
+            <span class="material-symbols-outlined">history</span>
+          </div>
+          <h4>Activity & Debug Log Viewer</h4>
+          <p>Keep track of intercepted events with timestamps, source apps, target apps, and action logs, featuring live text search and clipboard export.</p>
+        </div>
+
+        <!-- Feature 10 -->
+        <div class="feature-card">
+          <div class="feature-icon-box green">
+            <span class="material-symbols-outlined">health_and_safety</span>
+          </div>
+          <h4>Accessibility Health Monitoring</h4>
+          <p>Automatically detects if Android killed or desynced the background accessibility service, with options to force stop, re-enable via Shizuku, or open system settings.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Specifications Table -->
+  <section class="section" id="specs">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-subtitle">Technical Details</span>
+          <h2 class="section-title">App Specifications</h2>
+        </div>
+      </div>
+
+      <div class="specs-card">
+        <table class="specs-table">
+          <tbody>
+            <tr>
+              <th>Package Name</th>
+              <td><span class="code-pill">com.rdevzph.redirectguard</span></td>
+            </tr>
+            <tr>
+              <th>Current Version</th>
+              <td><span id="table-version">1.3</span> (VersionCode: <span id="table-version-code">4</span>)</td>
+            </tr>
+            <tr>
+              <th>Downloads</th>
+              <td><span class="code-pill" id="table-downloads">--</span> total downloads via GitHub Releases</td>
+            </tr>
+            <tr>
+              <th>Operating System</th>
+              <td>Android 7.0 (API 24) through Android 15 (API 37)</td>
+            </tr>
+            <tr>
+              <th>Architectures</th>
+              <td>Universal (arm64-v8a, armeabi-v7a, x86, x86_64)</td>
+            </tr>
+            <tr>
+              <th>Core Permissions</th>
+              <td><code>AccessibilityService</code>, <code>SYSTEM_ALERT_WINDOW</code>, <code>POST_NOTIFICATIONS</code></td>
+            </tr>
+            <tr>
+              <th>Optional Integrations</th>
+              <td>Shizuku (elevated shell access for process termination)</td>
+            </tr>
+            <tr>
+              <th>Privacy Policy</th>
+              <td><a href="privacy.html" style="color: var(--md-sys-color-primary); text-decoration: underline;">100% Offline • Zero Data Collection (View Policy)</a></td>
+            </tr>
+            <tr>
+              <th>Source Repository</th>
+              <td><a href="https://github.com/rdevz-ph/RedirectGuard" target="_blank" rel="noopener noreferrer"
+                  style="color: var(--md-sys-color-primary); text-decoration: underline;">github.com/rdevz-ph/RedirectGuard</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox-modal" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close image preview">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="lightbox-content">
+      <img src="" alt="Screenshot Full View" class="lightbox-img" id="lightbox-img">
+    </div>
+  </div>
+
+  <!-- Toast Notification / M3 Snackbar -->
+  <div class="toast" id="toast">
+    <span class="material-symbols-outlined" style="color: var(--md-sys-color-primary);">check_circle</span>
+    <span id="toast-message">Link copied to clipboard!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <ul class="footer-links">
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard" target="_blank" rel="noopener noreferrer"
+            class="footer-link">GitHub</a></li>
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard/releases" target="_blank" rel="noopener noreferrer"
+            class="footer-link">Releases</a></li>
+        <li><a href="https://awesome-shizuku.vercel.app/apps/redirectguard" target="_blank" rel="noopener noreferrer"
+            class="footer-link">ShizuStore</a></li>
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard/issues" target="_blank" rel="noopener noreferrer"
+            class="footer-link">Issue Tracker</a></li>
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard/blob/main/LICENSE" target="_blank"
+            rel="noopener noreferrer" class="footer-link">Apache 2.0 License</a></li>
+        <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+        <li><a href="donate.html" class="footer-link">Donate</a></li>
+      </ul>
+
+      <p class="footer-meta">
+        Redirect Guard for Android • Developed by <strong>Romel</strong> (<a href="https://github.com/rdevz-ph" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">rdevz-ph</a>) • <a href="https://romel-portfolio.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Portfolio</a> • Crafted with Material Design 3
+      </p>
+    </div>
+  </footer>
+
+  <!-- Interactive JavaScript -->
+  <script src="changelogs.js"></script>
+  <script>
+    // ==========================================================================
+    // 1. Material Design 3 Theme Switcher (Dark -> AMOLED -> Light)
+    // ==========================================================================
+    const THEMES = ['dark', 'amoled', 'light'];
+    const THEME_ICONS = {
+      'dark': 'dark_mode',
+      'amoled': 'contrast',
+      'light': 'light_mode'
+    };
+    const THEME_TITLES = {
+      'dark': 'Theme: Dark (Default) - Click to switch to AMOLED Black',
+      'amoled': 'Theme: AMOLED Black - Click to switch to Light',
+      'light': 'Theme: Light - Click to switch to Dark'
+    };
+
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+
+    function applyTheme(themeName) {
+      if (!THEMES.includes(themeName)) themeName = 'dark';
+      document.documentElement.setAttribute('data-theme', themeName);
+      if (themeIcon) themeIcon.textContent = THEME_ICONS[themeName] || 'dark_mode';
+      if (themeToggleBtn) themeToggleBtn.title = THEME_TITLES[themeName] || 'Toggle Theme';
+      try {
+        localStorage.setItem('redirectguard_theme', themeName);
+      } catch (_) {}
+    }
+
+    const savedTheme = (() => {
+      try {
+        return localStorage.getItem('redirectguard_theme');
+      } catch (_) {
+        return null;
+      }
+    })();
+
+    if (savedTheme && THEMES.includes(savedTheme)) {
+      applyTheme(savedTheme);
+    } else {
+      applyTheme('dark');
+    }
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
+        applyTheme(THEMES[nextIdx]);
+      });
+    }
+
+    // ==========================================================================
+    // 2. Dynamic Changelogs Loader & Parser from changelogs.txt
+    // ==========================================================================
+    function parseAndRenderChangelogs(text) {
+      const container = document.getElementById('changelogs-container');
+      if (!container || !text) return;
+
+      const rawReleases = text.trim().split(/\n(?=##\s)/);
+      let html = '';
+
+      rawReleases.forEach((block, idx) => {
+        const lines = block.trim().split('\n').map(l => l.trim()).filter(Boolean);
+        if (!lines.length) return;
+
+        const headerLine = lines[0].replace(/^##\s*/, '');
+        const parts = headerLine.split('|').map(s => s.trim());
+        const version = parts[0] || 'Release';
+        const tag = parts[1] || version;
+        const date = parts[2] || '';
+        const isLatest = idx === 0;
+
+        const items = lines.slice(1).map(l => {
+          if (l.startsWith('### ') || l.startsWith('#### ')) {
+            const sectionTitle = l.replace(/^#+\s*/, '');
+            return `<li class="changelog-category">${sectionTitle}</li>`;
+          }
+          if (!l.startsWith('- ')) return '';
+          const content = l.replace(/^- \s*/, '');
+          const colonIdx = content.indexOf(':');
+          if (colonIdx !== -1) {
+            const title = content.substring(0, colonIdx);
+            const desc = content.substring(colonIdx + 1);
+            return `<li class="changelog-item"><span class="changelog-bullet"></span><div><strong>${title}:</strong>${desc}</div></li>`;
+          }
+          return `<li class="changelog-item"><span class="changelog-bullet"></span><div>${content}</div></li>`;
+        }).join('');
+
+        html += `
+          <details class="changelog-details ${isLatest ? 'is-latest' : ''}" ${isLatest ? 'open' : ''}>
+            <summary class="changelog-summary">
+              <div class="changelog-summary-left">
+                <span class="changelog-version-title">${version}</span>
+                <span class="changelog-tag ${isLatest ? '' : 'prev'}">${tag}</span>
+              </div>
+              <div class="changelog-summary-right">
+                <span class="changelog-date">${date}</span>
+                <span class="material-symbols-outlined changelog-chevron">expand_more</span>
+              </div>
+            </summary>
+            <div class="changelog-body">
+              <ul class="changelog-list">${items}</ul>
+            </div>
+          </details>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      container.querySelectorAll('.changelog-details').forEach(detail => {
+        detail.addEventListener('toggle', () => {
+          if (typeof updateActiveNav === 'function') {
+            updateActiveNav();
+          }
+        });
+      });
+    }
+
+    async function loadChangelogs() {
+      try {
+        const response = await fetch('changelogs.txt');
+        if (response.ok) {
+          const text = await response.text();
+          if (text && text.trim().startsWith('##')) {
+            parseAndRenderChangelogs(text);
+            return;
+          }
+        }
+      } catch (_) {}
+
+      if (window.CHANGELOGS_TEXT) {
+        parseAndRenderChangelogs(window.CHANGELOGS_TEXT);
+      }
+    }
+
+    loadChangelogs();
+
+    // ==========================================================================
+    // 3. GitHub API Release Fetcher
+    // ==========================================================================
+    const REPO_OWNER = 'rdevz-ph';
+    const REPO_NAME = 'RedirectGuard';
+    const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
+
+    async function fetchLatestRelease() {
+      try {
+        const response = await fetch(GITHUB_API_URL);
+        if (!response.ok) return;
+        const release = await response.json();
+
+        if (release.tag_name) {
+          const versionTag = release.tag_name;
+          const chipEl = document.getElementById('hero-version-chip');
+          if (chipEl) chipEl.textContent = `${versionTag} (Latest)`;
+          const statEl = document.getElementById('stat-version');
+          if (statEl) statEl.textContent = versionTag;
+          const tableEl = document.getElementById('table-version');
+          if (tableEl) tableEl.textContent = versionTag.replace('v', '');
+        }
+
+        const apkAsset = release.assets?.find(a => a.name.endsWith('.apk') && !a.name.includes('-debug'));
+        if (apkAsset) {
+          const sizeMB = (apkAsset.size / (1024 * 1024)).toFixed(1);
+          const sizePill = document.getElementById('apk-size-pill');
+          if (sizePill) {
+            sizePill.textContent = `${sizeMB} MB`;
+            sizePill.style.display = 'inline-flex';
+          }
+          const mainDownloadBtn = document.getElementById('main-download-btn');
+          if (mainDownloadBtn) mainDownloadBtn.href = apkAsset.browser_download_url;
+          const navDownloadBtn = document.getElementById('nav-download-btn');
+          if (navDownloadBtn) navDownloadBtn.href = apkAsset.browser_download_url;
+          const drawerDownloadBtn = document.getElementById('drawer-download-btn');
+          if (drawerDownloadBtn) drawerDownloadBtn.href = apkAsset.browser_download_url;
+
+          const noteEl = document.getElementById('download-note');
+          if (noteEl) {
+            noteEl.innerHTML = `
+              <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+              <span>Direct APK download (${sizeMB} MB) • Also available on <a href="${release.html_url || 'https://github.com/rdevz-ph/RedirectGuard/releases/latest'}" target="_blank" rel="noopener noreferrer">GitHub Releases</a> and <a href="https://awesome-shizuku.vercel.app/apps/redirectguard" target="_blank" rel="noopener noreferrer">ShizuStore</a></span>
+            `;
+          }
+        }
+      } catch (e) {
+        console.log('Using default static release links:', e);
+      }
+    }
+
+    fetchLatestRelease();
+
+    // ==========================================================================
+    // 4. Live Downloads Counter
+    // ==========================================================================
+    const DOWNLOADS_API_URL = `https://my-release-badge-api.netlify.app/api/badge?owner=${REPO_OWNER}&repo=${REPO_NAME}&mode=json`;
+
+    function updateDownloadsUI(count) {
+      if (typeof count !== 'number' || isNaN(count)) return;
+      const formattedK = count >= 1000 ? (count / 1000).toFixed(1).replace('.0', '') + 'k+' : count.toLocaleString();
+      const countComma = count.toLocaleString();
+
+      const statEl = document.getElementById('stat-downloads-val');
+      if (statEl) statEl.textContent = formattedK;
+
+      const heroChip = document.getElementById('hero-downloads-chip');
+      if (heroChip) heroChip.label = `${countComma} Downloads`;
+
+      const tableEl = document.getElementById('table-downloads');
+      if (tableEl) tableEl.textContent = `${countComma} downloads`;
+    }
+
+    async function fetchDownloadsCount() {
+      try {
+        const cached = localStorage.getItem('redirectguard_downloads_count');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Date.now() - parsed.timestamp < 3600000 && typeof parsed.count === 'number') {
+            updateDownloadsUI(parsed.count);
+          }
+        }
+
+        const response = await fetch(DOWNLOADS_API_URL);
+        if (!response.ok) return;
+        const data = await response.json();
+        const total = typeof data.total === 'number' ? data.total : (typeof data.count === 'number' ? data.count : parseInt(data.message, 10));
+
+        if (!isNaN(total)) {
+          updateDownloadsUI(total);
+          localStorage.setItem('redirectguard_downloads_count', JSON.stringify({ count: total, timestamp: Date.now() }));
+        }
+      } catch (e) {
+        console.log('Download counter fallback:', e);
+      }
+    }
+
+    fetchDownloadsCount();
+
+    // ==========================================================================
+    // 5. Screenshots Carousel Navigation & Lightbox
+    // ==========================================================================
+    const galleryContainer = document.getElementById('gallery-container');
+    const scrollPrevBtn = document.getElementById('scroll-prev');
+    const scrollNextBtn = document.getElementById('scroll-next');
+
+    if (galleryContainer && scrollPrevBtn && scrollNextBtn) {
+      scrollPrevBtn.addEventListener('click', () => {
+        galleryContainer.scrollBy({ left: -320, behavior: 'smooth' });
+      });
+      scrollNextBtn.addEventListener('click', () => {
+        galleryContainer.scrollBy({ left: 320, behavior: 'smooth' });
+      });
+    }
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+
+    document.querySelectorAll('.gallery-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const fullSrc = item.getAttribute('data-full');
+        if (lightbox && lightboxImg && fullSrc) {
+          lightboxImg.src = fullSrc;
+          lightbox.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }
+      });
+    });
+
+    function closeLightbox() {
+      if (lightbox) {
+        lightbox.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
+
+    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+    if (lightbox) {
+      lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightbox();
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    // ==========================================================================
+    // 6. Toast Notification
+    // ==========================================================================
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      if (!toast || !toastMsg) return;
+
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // ==========================================================================
+    // 7. Share Action
+    // ==========================================================================
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', async () => {
+        const shareData = {
+          title: 'Redirect Guard for Android',
+          text: 'An open-source Android tool that helps prevent unwanted ad redirects and deep links to external apps.',
+          url: window.location.href
+        };
+
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+          } catch (_) {}
+        } else {
+          await navigator.clipboard.writeText(window.location.href);
+          showToast('Website link copied to clipboard!');
+        }
+      });
+    }
+
+    // ==========================================================================
+    // 8. M3 Tabs & Scroll Spy Synchronization
+    // ==========================================================================
+    const mainNavTabs = document.getElementById('main-nav-tabs');
+    const tabElements = [
+      { id: 'overview', tab: document.getElementById('tab-overview') },
+      { id: 'screenshots', tab: document.getElementById('tab-screenshots') },
+      { id: 'whats-new', tab: document.getElementById('tab-whats-new') },
+      { id: 'features', tab: document.getElementById('tab-features') },
+      { id: 'specs', tab: document.getElementById('tab-specs') }
+    ];
+
+    let isTabClickScrolling = false;
+
+    function setActiveSection(index) {
+      if (index < 0 || index >= tabElements.length) return;
+      if (mainNavTabs) {
+        mainNavTabs.activeTabIndex = index;
+      }
+      const drawerItems = document.querySelectorAll('.drawer-item');
+      drawerItems.forEach((item, i) => {
+        if (i === index) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    tabElements.forEach(({ id, tab }, index) => {
+      if (!tab) return;
+      tab.addEventListener('click', () => {
+        const targetEl = document.getElementById(id);
+        setActiveSection(index);
+        if (targetEl) {
+          isTabClickScrolling = true;
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            isTabClickScrolling = false;
+            updateActiveNav();
+          }, 850);
+        }
+      });
+    });
+
+    function updateActiveNav() {
+      if (isTabClickScrolling) return;
+
+      const scrollPosition = window.scrollY + window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      if (documentHeight - scrollPosition <= 120) {
+        setActiveSection(tabElements.length - 1);
+        return;
+      }
+
+      const triggerPoint = 180;
+      let activeIndex = 0;
+
+      tabElements.forEach(({ id }, index) => {
+        const section = document.getElementById(id);
+        if (section) {
+          const rect = section.getBoundingClientRect();
+          if (rect.top <= triggerPoint) {
+            activeIndex = index;
+          }
+        }
+      });
+
+      setActiveSection(activeIndex);
+    }
+
+    // ==========================================================================
+    // 9. Mobile Navigation Drawer
+    // ==========================================================================
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const drawerCloseBtn = document.getElementById('drawer-close-btn');
+    const mobileDrawer = document.getElementById('mobile-nav-drawer');
+    const drawerScrim = document.getElementById('mobile-drawer-scrim');
+
+    function openMobileDrawer() {
+      if (mobileDrawer && drawerScrim) {
+        updateActiveNav();
+        mobileDrawer.classList.add('open');
+        drawerScrim.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeMobileDrawer() {
+      if (mobileDrawer && drawerScrim) {
+        mobileDrawer.classList.remove('open');
+        drawerScrim.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
+
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileDrawer);
+    if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeMobileDrawer);
+    if (drawerScrim) drawerScrim.addEventListener('click', closeMobileDrawer);
+
+    document.querySelectorAll('.drawer-item').forEach((item, index) => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = item.getAttribute('data-target');
+        const targetEl = document.getElementById(targetId);
+        
+        setActiveSection(index);
+        closeMobileDrawer();
+
+        if (targetEl) {
+          isTabClickScrolling = true;
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            isTabClickScrolling = false;
+            updateActiveNav();
+          }, 850);
+        }
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileDrawer && mobileDrawer.classList.contains('open')) {
+        closeMobileDrawer();
+      }
+    });
+
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    window.addEventListener('resize', updateActiveNav, { passive: true });
+    window.addEventListener('hashchange', updateActiveNav, { passive: true });
+
+    updateActiveNav();
+  </script>
+</body>
+
+</html>

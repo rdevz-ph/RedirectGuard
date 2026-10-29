@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Redirect Guard for Android</title>
+
+  <!-- SEO & Social Meta -->
+  <meta name="description"
+    content="Privacy Policy for Redirect Guard for Android. 100% offline, zero personal data collection, zero analytics, and zero tracking.">
+  <meta name="keywords"
+    content="Redirect Guard, Android, Privacy Policy, Offline, Open Source, Shizuku, Accessibility Service">
+  <meta name="author" content="Romel (rdevz-ph)">
+
+  <meta property="og:title" content="Privacy Policy - Redirect Guard for Android">
+  <meta property="og:description"
+    content="Privacy Policy for Redirect Guard for Android. 100% offline, zero personal data collection, zero analytics, and zero tracking.">
+  <meta property="og:image" content="assets/icon.png">
+  <meta property="og:type" content="website">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+
+  <!-- Google Fonts: Roboto & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Material Symbols Outlined -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    .policy-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+      width: 100%;
+    }
+
+    .policy-card {
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-extra-large);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      width: 100%;
+    }
+
+    .policy-header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      padding-bottom: 1.5rem;
+    }
+
+    .policy-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--md-sys-shape-corner-full);
+      background-color: var(--shield-green-container);
+      color: var(--shield-green);
+      margin-bottom: 0.85rem;
+    }
+
+    .policy-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .policy-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1.75rem;
+      font-size: 0.85rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .policy-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+    }
+
+    .policy-meta-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--md-sys-color-on-surface-variant);
+      display: inline-block;
+    }
+
+    .policy-meta-text {
+      line-height: 1.25;
+      font-size: 0.85rem;
+      overflow-wrap: anywhere;
+    }
+
+    /* Developer Information Box */
+    .dev-box {
+      background-color: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-large);
+      padding: 1.25rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .dev-box h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--md-sys-color-primary);
+      margin-bottom: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .dev-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-medium);
+      min-width: 0;
+    }
+
+    .dev-icon {
+      color: var(--md-sys-color-primary);
+      font-size: 1.25rem;
+      width: 1.25rem;
+      height: 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .dev-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .dev-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface-variant);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .dev-value {
+      font-size: 0.9rem;
+      color: var(--md-sys-color-on-surface);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .dev-link {
+      font-size: 0.875rem;
+      color: var(--md-sys-color-primary);
+      text-decoration: underline;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      transition: opacity 0.2s ease;
+    }
+
+    .dev-link:hover {
+      opacity: 0.8;
+    }
+
+    .policy-section {
+      margin-bottom: 2rem;
+    }
+
+    .policy-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .policy-section h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .policy-section h2 .material-symbols-outlined {
+      color: var(--md-sys-color-primary);
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .policy-section p {
+      font-size: 0.975rem;
+      color: var(--md-sys-color-on-surface-variant);
+      line-height: 1.65;
+      margin-bottom: 0.85rem;
+      overflow-wrap: anywhere;
+    }
+
+    .policy-section a {
+      color: var(--md-sys-color-primary);
+      text-decoration: underline;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+    }
+
+    .policy-section ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0.75rem 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .policy-section ul li {
+      position: relative;
+      padding-left: 1.5rem;
+      font-size: 0.95rem;
+      color: var(--md-sys-color-on-surface-variant);
+      line-height: 1.55;
+    }
+
+    .policy-section ul li::before {
+      content: "";
+      position: absolute;
+      left: 0.25rem;
+      top: 0.6rem;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--md-sys-color-primary);
+    }
+
+    .policy-section ul li strong {
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .policy-section code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      background-color: var(--md-sys-color-surface-container-highest);
+      padding: 0.15rem 0.35rem;
+      border-radius: var(--md-sys-shape-corner-extra-small);
+      color: var(--md-sys-color-primary);
+    }
+
+    /* Navigation Action Buttons */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-btn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--md-sys-color-on-surface);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--md-sys-shape-corner-full);
+      background-color: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      transition: background-color 0.2s ease, color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .nav-btn-link:hover {
+      background-color: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-primary);
+    }
+
+    .theme-btn-round {
+      background: transparent;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      cursor: pointer;
+      color: var(--md-sys-color-on-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 50%;
+      background-color: var(--md-sys-color-surface-container-high);
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .theme-btn-round:hover {
+      background-color: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-primary);
+    }
+
+    @media (max-width: 768px) {
+      .policy-container {
+        padding: 1.25rem 1rem 3.5rem;
+      }
+
+      .policy-card {
+        padding: 1.75rem 1.25rem;
+        border-radius: var(--md-sys-shape-corner-large);
+      }
+
+      .policy-title {
+        font-size: 1.85rem;
+      }
+
+      .dev-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav-btn-text {
+        display: none;
+      }
+
+      .nav-btn-link {
+        padding: 0;
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 50%;
+        justify-content: center;
+      }
+
+      .header-content {
+        padding: 0 0.75rem;
+      }
+
+      .brand-title {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Top App Bar -->
+  <header class="m3-top-app-bar">
+    <div class="container header-content">
+      <a href="index.html" class="brand-link">
+        <img src="assets/icon.png" alt="Redirect Guard Icon" class="brand-icon">
+        <div class="brand-title">
+          Redirect Guard
+          <span class="brand-badge">Android</span>
+        </div>
+      </a>
+
+      <!-- Quick Action Buttons -->
+      <div class="nav-actions">
+        <a href="index.html" class="nav-btn-link" title="Back to Home">
+          <span class="material-symbols-outlined" style="font-size: 1.15rem;">arrow_back</span>
+          <span class="nav-btn-text">Back to Home</span>
+        </a>
+
+        <!-- Theme Switcher -->
+        <button id="theme-toggle-btn" class="theme-btn-round" aria-label="Toggle Theme" title="Theme (Dark / AMOLED / Light)">
+          <span class="material-symbols-outlined" id="theme-icon" style="font-size: 1.15rem;">dark_mode</span>
+        </button>
+
+        <a href="https://github.com/rdevz-ph/RedirectGuard" target="_blank" rel="noopener noreferrer" class="nav-btn-link" title="GitHub Repository">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span class="nav-btn-text">GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="policy-container">
+    <article class="policy-card">
+      <div class="policy-header">
+        <span class="policy-badge">Offline Application</span>
+        <h1 class="policy-title">Privacy Policy</h1>
+        <div class="policy-meta">
+          <div class="policy-meta-item">
+            <svg class="policy-meta-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+            </svg>
+            <span class="policy-meta-text">Last Updated: October 29, 2026</span>
+          </div>
+          <div class="policy-meta-item">
+            <svg class="policy-meta-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+            </svg>
+            <span class="policy-meta-text">Application: Redirect Guard Android (com.rdevzph.redirectguard)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Developer Information Box -->
+      <div class="dev-box">
+        <h3>Developer Information</h3>
+        <div class="dev-grid">
+          <div class="dev-item">
+            <span class="material-symbols-outlined dev-icon">person</span>
+            <div class="dev-info">
+              <span class="dev-label">Developer</span>
+              <span class="dev-value"><a href="https://github.com/rdevz-ph" target="_blank" rel="noopener noreferrer" class="dev-link">Romel (rdevz-ph)</a></span>
+            </div>
+          </div>
+          <div class="dev-item">
+            <span class="material-symbols-outlined dev-icon">language</span>
+            <div class="dev-info">
+              <span class="dev-label">Portfolio</span>
+              <a href="https://romel-portfolio.vercel.app/" target="_blank" rel="noopener noreferrer" class="dev-link">https://romel-portfolio.vercel.app/</a>
+            </div>
+          </div>
+          <div class="dev-item">
+            <svg class="dev-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <div class="dev-info">
+              <span class="dev-label">GitHub Profile</span>
+              <a href="https://github.com/rdevz-ph" target="_blank" rel="noopener noreferrer" class="dev-link">https://github.com/rdevz-ph</a>
+            </div>
+          </div>
+          <div class="dev-item">
+            <svg class="dev-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <div class="dev-info">
+              <span class="dev-label">Source Code Repository</span>
+              <a href="https://github.com/rdevz-ph/RedirectGuard" target="_blank" rel="noopener noreferrer" class="dev-link">https://github.com/rdevz-ph/RedirectGuard</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Overview -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">shield</span>
+          Overview
+        </h2>
+        <p>
+          Redirect Guard for Android is an open-source tool designed to protect users against unwanted application transitions, intrusive ad redirects, and automatic external deep links.
+        </p>
+        <p>
+          The application is built on a strict privacy-first foundation: it operates entirely offline on your device. The app does not collect, record, track, transmit, or monetize any personal information.
+        </p>
+      </section>
+
+      <!-- Section 2: Information We Do Not Collect -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">visibility_off</span>
+          Information We Do Not Collect
+        </h2>
+        <p>
+          Redirect Guard does not collect personal data, user accounts, or persistent identifiers:
+        </p>
+        <ul>
+          <li><strong>No Personal Information:</strong> We do not collect names, email addresses, phone numbers, contact books, account credentials, or user profiles. No account registration is required.</li>
+          <li><strong>No Tracking Identifiers:</strong> We do not collect advertising IDs, IMEI numbers, MAC addresses, or persistent hardware identifiers for user profiling.</li>
+          <li><strong>No Third-Party Analytics:</strong> The app contains no third-party analytics libraries, advertising trackers, or behavioral profiling tools.</li>
+          <li><strong>No Automatic Remote Crash Reporting:</strong> The app does not automatically transmit crash logs or stack traces to external servers. If a crash occurs, a readable diagnostic screen appears locally, allowing you to optionally inspect or copy the report yourself.</li>
+          <li><strong>No Internet Communication:</strong> The app does not transmit intercepted URLs, app switch history, or configuration preferences over the internet.</li>
+        </ul>
+      </section>
+
+      <!-- Section 3: How Protection Data Is Handled Locally -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">security</span>
+          How Protection Data Is Handled Locally
+        </h2>
+        <p>
+          All operations and protection mechanisms in Redirect Guard run locally on your device:
+        </p>
+        <ul>
+          <li><strong>Window Transition Monitoring:</strong> The Android Accessibility Service observes window change events exclusively to determine when an external application is launched. It does not inspect, read, log, or record user keystrokes, personal messages, banking details, or screen contents.</li>
+          <li><strong>Process Termination:</strong> When an unwanted redirect occurs, the application uses local Shizuku privileged shell commands (<code>am force-stop &lt;package&gt;</code>) to close the target process. These commands execute strictly on your device and are never transmitted over any network.</li>
+          <li><strong>Activity & Debug Logs:</strong> Intercepted redirect records (displaying timestamps, source application names, and target package names) are kept solely in local device memory and local app storage for your personal review. You can clear or search these logs at any time.</li>
+          <li><strong>Installed App Lists:</strong> When you open the Applications management screen, the app queries Android's local package manager to list installed applications so you can customize protection settings. This list is processed entirely on your device.</li>
+        </ul>
+      </section>
+
+      <!-- Section 4: Device Permissions -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">lock_open</span>
+          Device Permissions and Their Purposes
+        </h2>
+        <p>
+          Redirect Guard requests specific Android permissions strictly to perform its core redirect interception functions:
+        </p>
+        <ul>
+          <li>
+            <strong>Accessibility Service (<code>RedirectAccessibilityService</code>):</strong>
+            Required to detect window state transitions and determine when an ad or external web page initiates an unauthorized app switch. The service is strictly configured to protect your privacy and does not read or collect on-screen content.
+          </li>
+          <li>
+            <strong>Display Over Other Apps (<code>SYSTEM_ALERT_WINDOW</code>):</strong>
+            Required to show the permission confirmation dialog over the originating application so you can choose whether to allow or block the redirect.
+          </li>
+          <li>
+            <strong>Shizuku Shell Access (Optional / Elevated):</strong>
+            Used to terminate redirected application processes without requiring root access. Shizuku is also used for one-tap automated permission setup during initial configuration.
+          </li>
+          <li>
+            <strong>Post Notifications (<code>POST_NOTIFICATIONS</code>):</strong>
+            Required on Android 13+ to display service status alerts and accessibility service health warnings.
+          </li>
+          <li>
+            <strong>Ignore Battery Optimizations (Optional):</strong>
+            Allows you to exempt Redirect Guard from aggressive system battery killers to ensure reliable background monitoring.
+          </li>
+        </ul>
+      </section>
+
+      <!-- Section 5: Data Storage and Security -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">database</span>
+          Data Storage and Security
+        </h2>
+        <p>
+          All user preferences (including guarded applications, whitelisted applications, interception mode, and log filter choices) are stored locally in private application storage on your device. Uninstalling the application completely deletes all stored preferences and logs.
+        </p>
+      </section>
+
+      <!-- Section 6: Open Source Transparency -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">code</span>
+          Open Source Transparency
+        </h2>
+        <p>
+          Redirect Guard is licensed under the Apache License 2.0. The complete source code is public and available for audit, inspection, and verification at:
+          <br>
+          <a href="https://github.com/rdevz-ph/RedirectGuard" target="_blank" rel="noopener noreferrer">https://github.com/rdevz-ph/RedirectGuard</a>
+        </p>
+      </section>
+
+      <!-- Section 7: Contact -->
+      <section class="policy-section">
+        <h2>
+          <span class="material-symbols-outlined">mail</span>
+          Contact and Inquiries
+        </h2>
+        <p>
+          If you have any questions, bug reports, or feature suggestions regarding this privacy policy or the application, feel free to open an issue or reach out through:
+        </p>
+        <ul>
+          <li><strong>GitHub Issues:</strong> <a href="https://github.com/rdevz-ph/RedirectGuard/issues" target="_blank" rel="noopener noreferrer">https://github.com/rdevz-ph/RedirectGuard/issues</a></li>
+          <li><strong>Developer Portfolio:</strong> <a href="https://romel-portfolio.vercel.app/" target="_blank" rel="noopener noreferrer">https://romel-portfolio.vercel.app/</a></li>
+          <li><strong>Email:</strong> <a href="mailto:brosasromel01@gmail.com">brosasromel01@gmail.com</a></li>
+        </ul>
+      </section>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <ul class="footer-links">
+        <li><a href="index.html" class="footer-link">Home</a></li>
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub</a></li>
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard/releases" target="_blank" rel="noopener noreferrer" class="footer-link">Releases</a></li>
+        <li><a href="https://github.com/rdevz-ph/RedirectGuard/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="footer-link">Apache 2.0 License</a></li>
+        <li><a href="donate.html" class="footer-link">Donate</a></li>
+      </ul>
+      <p class="footer-meta">
+        Redirect Guard for Android • Developed by <strong>Romel</strong> (<a href="https://github.com/rdevz-ph" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">rdevz-ph</a>) • <a href="https://romel-portfolio.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Portfolio</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    const THEMES = ['dark', 'amoled', 'light'];
+    const THEME_ICONS = { 'dark': 'dark_mode', 'amoled': 'contrast', 'light': 'light_mode' };
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+
+    function applyTheme(themeName) {
+      if (!THEMES.includes(themeName)) themeName = 'dark';
+      document.documentElement.setAttribute('data-theme', themeName);
+      if (themeIcon) themeIcon.textContent = THEME_ICONS[themeName] || 'dark_mode';
+      try {
+        localStorage.setItem('redirectguard_theme', themeName);
+      } catch (_) {}
+    }
+
+    const savedTheme = (() => {
+      try {
+        return localStorage.getItem('redirectguard_theme');
+      } catch (_) {
+        return null;
+      }
+    })();
+
+    applyTheme(savedTheme || 'dark');
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
+        applyTheme(THEMES[nextIdx]);
+      });
+    }
+  </script>
+</body>
+
+</html>
+

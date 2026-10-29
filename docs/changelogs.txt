@@ -1,0 +1,41 @@
+## Version 1.3 | Latest Release | October 29, 2026
+- Dedicated Applications View: Added a dedicated Applications screen accessible directly from the bottom navigation bar to manage individual guard and whitelist protection for all installed apps.
+- App Management Navigation Tab: Added an Applications tab to the floating navigation bar with a badge counter displaying the number of installed guarded apps.
+- App Search and Filter Chips: Added instant search by app name or package identifier, along with filter chips for All, Guarded, Whitelisted, Shopping Presets, User Apps, and System Apps.
+- Safety Confirmation Warnings: Added confirmation dialogs before turning on Guard All External Apps and before turning off Whitelist System Apps to prevent accidental disruptions.
+- Synchronized Global Toggles: Global protection switches now automatically stay in sync with the app list when apps are turned on or off.
+- Automatic Conflict Prevention: Added automatic conflict handling so guarding an app removes it from the whitelist, and whitelisting an app removes it from the guarded list.
+- Shopping Presets Restoration: Added automatic restoration of installed shopping presets whenever Guard All External Apps is turned off.
+- Installed App Verification: Configured preset lists and badge counters to only count and display applications that are actually installed on the device.
+- Streamlined Main Dashboard: Moved global protection toggles to the Applications view and limited the dashboard whitelist card to user-installed external apps.
+
+## Version 1.2 | October 28, 2026
+- Material 3 Expressive Floating Toolbar: Added a floating pill toolbar at the bottom of the screen with animated tab switching between the main dashboard and the logs view.
+- Dedicated Logs and Debug View: Moved interception records into a dedicated logs view that records live app events, debug logs (Log.d), error logs (Log.e), and warning logs (Log.w).
+- Log Filter Toggles: Added filter chips to independently toggle redirects, debug logs, error logs, and warning logs.
+- Persistent Log Filters: The app now saves your chosen log filter preferences across restarts and stops recording disabled log levels into memory.
+- Log Search and Export: Added a real-time search field to filter logs by text, package, or link, along with a copy button that formats all visible logs with timestamps to your clipboard.
+- Crash Handler and Reporter: Added an automated crash reporter running in an isolated process that displays exception details and provides a direct shortcut to open an issue on GitHub.
+- Readable Stack Traces: Configured release build rules to preserve source file names and line numbers so crash stack traces remain readable.
+
+## Version 1.1 | October 28, 2026
+- Dedicated Setup Wizard: Added a guided first-launch setup wizard that checks and verifies all required permissions before entering the main dashboard.
+- One-Tap Permission Setup via Shizuku: Added automated one-tap granting for notifications, overlay display, and battery optimization exemption through Shizuku.
+- Setup Wizard Re-entry: Added an option on the main dashboard to reopen the setup wizard at any time.
+### Fixed
+- Recent Apps Guard Bypass: Fixed an issue where switching back to an app through Recent Apps allowed subsequent redirects to bypass the guard due to trailing launcher animation events.
+- Immediate Prompt Dismissal on Complex Apps: Fixed a race condition where apps with rapid multi-activity launches, such as Shopee, caused the source app to be brought to the front over the confirmation dialog.
+- Background Event Filtering: Added active window verification so background and closing window events from exiting apps do not trigger unintended redirect prompts.
+- Normal App Switch Guard Invalidation: Fixed an issue where normal app switches from the home screen, app drawer, or sidebar were intercepted by invalidating the guard when a launch does not contain a deep link URL.
+
+## Version 1.0 | Initial Release | October 27, 2026
+- Initial Release: Initial official release of Redirect Guard for Android.
+- Permission Confirmation Prompt: Added a prompt asking whether to stay in your current app or proceed to the target app when a redirect happens.
+- Deep Link Interception: Added detection and blocking of unauthorized deep links from ads and external web pages.
+- Process Kill Interception: Added automated termination of redirected target apps using Shizuku to keep you in your browser.
+- Interception Modes: Added the ability to choose between asking for confirmation and instant auto-return.
+- Smart Launcher Whitelist: Added automatic whitelisting for home screen launchers and system utilities to prevent false positives when launching apps normally.
+- Guarded App Configuration: Added configurable presets for shopping apps alongside an option to guard all external apps.
+- Activity Log: Added a log that records intercepted redirect events with timestamps, source app names, and target app names.
+- Accessibility Health Monitoring: Added automated detection for killed or desynced accessibility service states, with options to force stop the app to clear stuck states, enable the service with one tap through Shizuku, and open system accessibility settings directly.
+

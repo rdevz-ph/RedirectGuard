@@ -440,6 +440,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return success
     }
 
+    val rawVersionName: String by lazy {
+        try {
+            val context = getApplication<Application>()
+            val pm = context.packageManager
+            val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(context.packageName, 0)
+            }
+            pInfo.versionName ?: "1.4"
+        } catch (e: Exception) {
+            "1.4"
+        }
+    }
+
     val appVersion: String by lazy {
         try {
             val context = getApplication<Application>()
@@ -463,11 +479,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun openRepositoryUrl() {
+    private fun openUrl(url: String) {
         val context = getApplication<Application>()
         val intent = Intent(
             Intent.ACTION_VIEW,
-            Uri.parse("https://github.com/rdevz-ph/RedirectGuard")
+            Uri.parse(url)
         ).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
@@ -478,19 +494,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun openRepositoryUrl() {
+        openUrl("https://github.com/rdevz-ph/RedirectGuard")
+    }
+
     fun openIssuesUrl() {
-        val context = getApplication<Application>()
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://github.com/rdevz-ph/RedirectGuard/issues")
-        ).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            // Browser not available
-        }
+        openUrl("https://github.com/rdevz-ph/RedirectGuard/issues")
+    }
+
+    fun openDonateUrl() {
+        openUrl("https://rdevz-ph.github.io/RedirectGuard/donate.html")
+    }
+
+    fun openPrivacyPolicyUrl() {
+        openUrl("https://rdevz-ph.github.io/RedirectGuard/privacy.html")
+    }
+
+    fun openRedirectTesterUrl() {
+        openUrl("https://github.com/rdevz-ph/RedirectGuard/releases/download/v$rawVersionName/RedirectGuardTester-v$rawVersionName-release.zip")
     }
 
     private fun checkCanDrawOverlays(): Boolean {

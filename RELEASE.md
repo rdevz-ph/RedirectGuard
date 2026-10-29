@@ -1,17 +1,14 @@
-# Redirect Guard v1.3
+# Redirect Guard v1.4
 
-### What's New in v1.3
+### What's New in v1.4
 
 #### Added
-- **Dedicated Applications View**: Added a dedicated Applications screen accessible directly from the bottom navigation bar to manage individual guard and whitelist protection for all installed apps.
-- **App Management Navigation Tab**: Added an Applications tab to the floating navigation bar with a badge counter displaying the number of installed guarded apps.
-- **App Search and Filter Chips**: Added instant search by app name or package identifier, along with filter chips for All, Guarded, Whitelisted, Shopping Presets, User Apps, and System Apps.
-- **Safety Confirmation Warnings**: Added confirmation dialogs before turning on Guard All External Apps and before turning off Whitelist System Apps to prevent accidental disruptions.
-- **Synchronized Global Toggles**: Global protection switches now automatically stay in sync with the app list when apps are turned on or off.
-- **Automatic Conflict Prevention**: Added automatic conflict handling so guarding an app removes it from the whitelist, and whitelisting an app removes it from the guarded list.
-- **Shopping Presets Restoration**: Added automatic restoration of installed shopping presets whenever Guard All External Apps is turned off.
-- **Installed App Verification**: Configured preset lists and badge counters to only count and display applications that are actually installed on the device.
-- **Streamlined Main Dashboard**: Moved global protection toggles to the Applications view and limited the dashboard whitelist card to user-installed external apps.
+- **Dedicated How It Works Dialog**: Moved the detailed explanation of how Redirect Guard works, Android security limitations, and the role of Shizuku into a separate dialog accessible through a button in the About screen.
+- **Companion Redirect Tester Link**: Added a direct button in the About dialog to download the companion Redirect Tester tool from GitHub releases.
+- **Direct Donate and Privacy Links**: Added direct buttons in the About dialog to open the donation page and privacy policy on the official website.
+
+#### Fixed
+- **Confirmation Dialog Button Visibility**: Fixed red button text color visibility in dark mode on the redirect confirmation dialog.
 
 For full version history and previous release notes, see [CHANGELOG.md](https://github.com/rdevz-ph/RedirectGuard/blob/main/CHANGELOG.md).
 

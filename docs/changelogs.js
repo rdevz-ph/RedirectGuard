@@ -1,5 +1,12 @@
 // External changelogs data source (preserves index.html cleanliness and file:// offline support)
-window.CHANGELOGS_TEXT = `## Version 1.3 | Latest Release | October 29, 2026
+window.CHANGELOGS_TEXT = `## Version 1.4 | Latest Release | October 29, 2026
+- Dedicated How It Works Dialog: Moved the detailed explanation of how Redirect Guard works, Android security limitations, and the role of Shizuku into a separate dialog accessible through a button in the About screen.
+- Companion Redirect Tester Link: Added a direct button in the About dialog to download the companion Redirect Tester tool from GitHub releases.
+- Direct Donate and Privacy Links: Added direct buttons in the About dialog to open the donation page and privacy policy on the official website.
+### Fixed
+- Confirmation Dialog Button Visibility: Fixed red button text color visibility in dark mode on the redirect confirmation dialog.
+
+## Version 1.3 | October 29, 2026
 - Dedicated Applications View: Added a dedicated Applications screen accessible directly from the bottom navigation bar to manage individual guard and whitelist protection for all installed apps.
 - App Management Navigation Tab: Added an Applications tab to the floating navigation bar with a badge counter displaying the number of installed guarded apps.
 - App Search and Filter Chips: Added instant search by app name or package identifier, along with filter chips for All, Guarded, Whitelisted, Shopping Presets, User Apps, and System Apps.

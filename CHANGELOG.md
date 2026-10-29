@@ -2,6 +2,16 @@
 
 All notable changes to Redirect Guard are documented in this file.
 
+## [v1.4](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.4) - 2026-10-29
+
+### Added
+- **Dedicated How It Works Dialog**: Moved the detailed explanation of how Redirect Guard works, Android security limitations, and the role of Shizuku into a separate dialog accessible through a button in the About screen.
+- **Companion Redirect Tester Link**: Added a direct button in the About dialog to download the companion Redirect Tester tool from GitHub releases.
+- **Direct Donate and Privacy Links**: Added direct buttons in the About dialog to open the donation page and privacy policy on the official website.
+
+### Fixed
+- **Confirmation Dialog Button Visibility**: Fixed red button text color visibility in dark mode on the redirect confirmation dialog.
+
 ## [v1.3](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.3) - 2026-10-29
 
 ### Added

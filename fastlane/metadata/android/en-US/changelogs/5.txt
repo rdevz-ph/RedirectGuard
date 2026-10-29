@@ -1,0 +1,3 @@
+- Added a dedicated dialog explaining how Redirect Guard works and Android security limitations.
+- Added direct buttons to donate, privacy policy, and the companion Redirect Tester download in the About dialog.
+- Fixed red button text color visibility in dark mode on the redirect confirmation dialog.

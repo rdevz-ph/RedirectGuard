@@ -826,7 +826,8 @@
         const response = await fetch(DOWNLOADS_API_URL);
         if (!response.ok) return;
         const data = await response.json();
-        const total = typeof data.total === 'number' ? data.total : (typeof data.count === 'number' ? data.count : parseInt(data.message, 10));
+        const rawCount = data.downloads ?? data.total ?? data.count ?? data.message;
+        const total = typeof rawCount === 'number' ? rawCount : parseInt(rawCount, 10);
 
         if (!isNaN(total)) {
           updateDownloadsUI(total);

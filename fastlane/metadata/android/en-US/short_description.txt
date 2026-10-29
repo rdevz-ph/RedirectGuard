@@ -1,0 +1,1 @@
+Prevent unwanted ad redirects and deep links to external apps.

@@ -1,0 +1,6 @@
+- Added a dedicated Applications screen to manage guard and whitelist settings for all installed apps.
+- Added an Applications tab with an installed guarded apps counter.
+- Added instant app search and category filter chips.
+- Added confirmation dialogs before guarding all external apps or disabling system app whitelisting.
+- Added automatic conflict handling between guarded and whitelisted lists.
+- Improved presets to only display apps currently installed on your device.

@@ -1,0 +1,5 @@
+- Added a guided setup wizard for first-time launch and permission verification.
+- Added one-tap automated permission granting using Shizuku.
+- Fixed an issue where switching back to an app through Recent Apps allowed trailing redirects.
+- Fixed a race condition where rapid multi-activity launches dismissed the confirmation dialog.
+- Added active window checks to ignore background window exit events.

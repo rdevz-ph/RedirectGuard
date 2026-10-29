@@ -1,0 +1,7 @@
+Initial release of Redirect Guard.
+- Stops unwanted ad redirects and unauthorized deep links to external applications.
+- Displays a confirmation prompt to stay in your app or proceed to the target app.
+- Safely terminates redirected applications using Shizuku.
+- Supports both Ask Confirmation and Instant Auto-Return interception modes.
+- Includes built-in shopping app presets and smart launcher whitelisting.
+- Records intercepted redirect attempts in an activity log.

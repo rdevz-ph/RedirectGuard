@@ -1,0 +1,14 @@
+Redirect Guard is an open-source Android utility that helps prevent unwanted ad redirects and unauthorized deep links to external apps. When an ad, webpage, or link attempts to force-open an external application like a shopping app, Redirect Guard catches the redirect and gives you the choice to stay where you are or proceed.
+
+Key Features:
+- Permission Confirmation Prompt: Displays an alert asking whether you want to open the target application or remain in your current app, complete with a countdown timer.
+- Instant Auto-Return Mode: Automatically closes redirected applications without showing a prompt.
+- Deep Link Interception: Catches unauthorized deep links before external applications can open.
+- Process Termination via Shizuku: Safely terminates redirected applications to cancel background tasks and return you to your previous app.
+- Application Management: Easily search, filter, and customize guard or whitelist protection for any installed app.
+- Built-in Shopping Presets: Quickly guard common shopping apps against intrusive ad redirects.
+- Smart Whitelist: Prevents false alarms by ignoring normal app launches from your home screen launcher, app drawer, and system utilities.
+- Activity and Interception Logs: View records of intercepted redirect attempts with source apps, target apps, and timestamps.
+- Guided Setup Wizard: First-launch checklist to configure required permissions, with one-tap setup through Shizuku.
+- Health Monitoring: Automatically checks accessibility service status and helps clear stuck background states.
+- Privacy-Focused: Free and open-source software with zero tracking, zero advertisements, and no data collection.

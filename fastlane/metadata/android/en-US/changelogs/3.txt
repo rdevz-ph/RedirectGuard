@@ -1,0 +1,4 @@
+- Added a Material 3 floating navigation bar with tab switching.
+- Added a dedicated Logs view with real-time search, filter chips, and log export.
+- Added an automated crash reporter with detailed diagnostics and issue reporting.
+- Configured stack traces to retain file names and line numbers for readable crash reports.

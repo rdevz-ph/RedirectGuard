@@ -118,6 +118,23 @@ To compile and install the tester companion app:
    ./gradlew :tester:installDebug
    ```
 
+## Frequently Asked Questions (FAQ)
+
+### Why I Wrote This App if ad blockers exist?
+Mobile browsers and ad networks frequently trigger non-consensual deep links that launch external shopping apps (such as Shopee or Lazada). While ad blockers stop some scripts, they cannot intercept native intent transitions once initiated. Redirect Guard acts as an immediate post-launch checkpoint, restoring user control over app switching.
+
+### How does it handle legitimate deep links?
+Redirect Guard gives you full control through multiple layers:
+- **Confirmation Mode**: Shows an instant dialog displaying the source app, target app, and deep link URL. You can proceed to the target app with one tap or choose "Always allow redirects from this app".
+- **Applications & Whitelist Management**: You can whitelist trusted source apps or exclude specific target apps directly from the Applications tab.
+- **Normal Launch Protection**: The service detects standard home screen launcher intents so that opening your apps normally from your launcher or app drawer is never blocked.
+
+### Is this secure?
+Yes, Redirect Guard is designed with strict security and privacy standards:
+- **No Internet Access**: The app does not request the `INTERNET` permission in its AndroidManifest. Android physically prevents the app from accessing the network or transmitting data.
+- **100% Offline**: All event checks, logs, and settings operate entirely on your device with zero telemetry or data collection.
+- **Fully Open Source**: The entire codebase is open source and reproducible, allowing anyone to inspect the source code and verify build integrity.
+
 ## Privacy Policy
 
 Redirect Guard for Android operates completely offline. It does not collect, monitor, or transmit any personal data. You can read the full policy at [Privacy Policy](https://rdevz-ph.github.io/RedirectGuard/privacy.html).

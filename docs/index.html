@@ -90,6 +90,10 @@
             <span slot="icon" class="material-symbols-outlined">info</span>
             Specifications
           </md-primary-tab>
+          <md-primary-tab id="tab-faq" data-target="faq">
+            <span slot="icon" class="material-symbols-outlined">help</span>
+            FAQ
+          </md-primary-tab>
         </md-tabs>
       </div>
 
@@ -159,6 +163,10 @@
       <a href="#specs" class="drawer-item" data-target="specs">
         <span class="material-symbols-outlined drawer-icon">info</span>
         <span class="drawer-label">Specifications</span>
+      </a>
+      <a href="#faq" class="drawer-item" data-target="faq">
+        <span class="material-symbols-outlined drawer-icon">help</span>
+        <span class="drawer-label">FAQ</span>
       </a>
     </nav>
 
@@ -561,6 +569,60 @@
     </div>
   </section>
 
+  <!-- Frequently Asked Questions Section -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-subtitle">Common Questions</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item open">
+          <button class="faq-question" aria-expanded="true">
+            <span>Why I Wrote This App if ad blockers exist?</span>
+            <span class="material-symbols-outlined faq-icon">expand_more</span>
+          </button>
+          <div class="faq-answer">
+            <p>Mobile browsers and ad networks frequently trigger non-consensual deep links that launch external shopping apps (such as Shopee or Lazada). While ad blockers stop some scripts, they cannot intercept native intent transitions once initiated. Redirect Guard acts as an immediate post-launch checkpoint, restoring user control over app switching.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span>How does it handle legitimate deep links?</span>
+            <span class="material-symbols-outlined faq-icon">expand_more</span>
+          </button>
+          <div class="faq-answer">
+            <p>Redirect Guard provides multiple layers of control so regular usage remains smooth:</p>
+            <ul>
+              <li><strong>Confirmation Mode:</strong> Displays an alert showing the source app, target app, and deep link URL with an option to proceed or allow always with one tap.</li>
+              <li><strong>Applications & Whitelist Management:</strong> Easily whitelist trusted source apps or exclude specific target apps from the dedicated Applications tab.</li>
+              <li><strong>Normal Launch Protection:</strong> Detects standard launcher intents so opening apps normally from your home screen or app drawer is never blocked.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span>Is this secure?</span>
+            <span class="material-symbols-outlined faq-icon">expand_more</span>
+          </button>
+          <div class="faq-answer">
+            <p>Yes, Redirect Guard is built with strict privacy and security standards:</p>
+            <ul>
+              <li><strong>No Internet Access:</strong> The app does not declare or request the <code>INTERNET</code> permission in its AndroidManifest. Android physically isolates the app from accessing the network.</li>
+              <li><strong>100% Offline:</strong> All monitoring, logs, and settings operate entirely on your device with zero telemetry or data collection.</li>
+              <li><strong>Fully Open Source:</strong> The complete source code is public and reproducible, allowing anyone to inspect the code and verify build integrity.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Lightbox Modal -->
   <div class="lightbox-modal" id="lightbox">
     <button class="lightbox-close" id="lightbox-close" aria-label="Close image preview">
@@ -936,7 +998,8 @@
       { id: 'screenshots', tab: document.getElementById('tab-screenshots') },
       { id: 'whats-new', tab: document.getElementById('tab-whats-new') },
       { id: 'features', tab: document.getElementById('tab-features') },
-      { id: 'specs', tab: document.getElementById('tab-specs') }
+      { id: 'specs', tab: document.getElementById('tab-specs') },
+      { id: 'faq', tab: document.getElementById('tab-faq') }
     ];
 
     let isTabClickScrolling = false;
@@ -1059,6 +1122,17 @@
     window.addEventListener('hashchange', updateActiveNav, { passive: true });
 
     updateActiveNav();
+
+    // FAQ Accordion Toggle
+    document.querySelectorAll('.faq-question').forEach(button => {
+      button.addEventListener('click', () => {
+        const item = button.closest('.faq-item');
+        if (!item) return;
+        const isOpen = item.classList.contains('open');
+        item.classList.toggle('open', !isOpen);
+        button.setAttribute('aria-expanded', !isOpen);
+      });
+    });
   </script>
 </body>
 

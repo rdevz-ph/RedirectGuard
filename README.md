@@ -120,7 +120,7 @@ To compile and install the tester companion app:
 
 ## Frequently Asked Questions (FAQ)
 
-### Why I Wrote This App if ad blockers exist?
+### Why was this app built if ad blockers exist?
 Mobile browsers and ad networks frequently trigger non-consensual deep links that launch external shopping apps (such as Shopee or Lazada). While ad blockers stop some scripts, they cannot intercept native intent transitions once initiated. Redirect Guard acts as an immediate post-launch checkpoint, restoring user control over app switching.
 
 ### How does it handle legitimate deep links?
@@ -134,6 +134,11 @@ Yes, Redirect Guard is designed with strict security and privacy standards:
 - **No Internet Access**: The app does not request the `INTERNET` permission in its AndroidManifest. Android physically prevents the app from accessing the network or transmitting data.
 - **100% Offline**: All event checks, logs, and settings operate entirely on your device with zero telemetry or data collection.
 - **Fully Open Source**: The entire codebase is open source and reproducible, allowing anyone to inspect the source code and verify build integrity.
+
+### Why is an app guarded but Redirect Guard does not trigger?
+If an app is on your guarded list but redirects are not being intercepted, check the following:
+- **Source App Whitelist**: Verify that the source app where the redirect begins (such as Google Chrome) is not whitelisted in the Applications tab. Whitelisted source apps are completely exempt from interception.
+- **Accessibility Service Health**: Check that Android background battery restrictions have not stopped or killed the Accessibility Service. You can check service health on the dashboard and re-enable it if needed.
 
 ## Privacy Policy
 

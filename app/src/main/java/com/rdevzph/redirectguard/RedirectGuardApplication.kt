@@ -20,7 +20,24 @@ class RedirectGuardApplication : Application() {
         shizukuHelper = ShizukuHelper(this)
         com.rdevzph.redirectguard.notification.NotificationHelper.createNotificationChannels(this)
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(this)
-        com.rdevzph.redirectguard.util.AppLogger.d("RedirectGuardApp", "Application initialized successfully (v1.2)")
+        val versionName = try {
+            val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0)
+            }
+            pInfo.versionName
+        } catch (_: Exception) {
+            null
+        }
+
+        val initMessage = if (!versionName.isNullOrBlank() && versionName != "Unknown") {
+            "Application initialized successfully (v$versionName)"
+        } else {
+            "Application initialized successfully"
+        }
+        com.rdevzph.redirectguard.util.AppLogger.d("RedirectGuardApp", initMessage)
     }
 
     override fun onTerminate() {

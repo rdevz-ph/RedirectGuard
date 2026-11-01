@@ -582,7 +582,7 @@
       <div class="faq-list">
         <div class="faq-item open">
           <button class="faq-question" aria-expanded="true">
-            <span>Why I Wrote This App if ad blockers exist?</span>
+            <span>Why was this app built if ad blockers exist?</span>
             <span class="material-symbols-outlined faq-icon">expand_more</span>
           </button>
           <div class="faq-answer">
@@ -616,6 +616,20 @@
               <li><strong>No Internet Access:</strong> The app does not declare or request the <code>INTERNET</code> permission in its AndroidManifest. Android physically isolates the app from accessing the network.</li>
               <li><strong>100% Offline:</strong> All monitoring, logs, and settings operate entirely on your device with zero telemetry or data collection.</li>
               <li><strong>Fully Open Source:</strong> The complete source code is public and reproducible, allowing anyone to inspect the code and verify build integrity.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span>Why is an app guarded but Redirect Guard does not trigger?</span>
+            <span class="material-symbols-outlined faq-icon">expand_more</span>
+          </button>
+          <div class="faq-answer">
+            <p>If an app is on your guarded list but redirects are not being intercepted, check the following:</p>
+            <ul>
+              <li><strong>Source App Whitelist:</strong> Verify that the source app where the redirect begins (such as Google Chrome) is not whitelisted in the Applications tab. Whitelisted source apps are completely exempt from interception.</li>
+              <li><strong>Accessibility Service Health:</strong> Check that Android background battery restrictions have not stopped or killed the Accessibility Service. You can check service health on the dashboard and re-enable it if needed.</li>
             </ul>
           </div>
         </div>

@@ -416,6 +416,9 @@ class PreferencesManager(private val context: Context) {
     }
 
     companion object {
+        val EXCLUDED_SYSTEM_PACKAGES = setOf(
+            "com.android.chrome"
+        )
         const val PERMANENT_WHITELISTED_PACKAGE = "com.rdevzph.fpsmeter"
         val PERMANENT_WHITELISTED_PACKAGES = setOf(PERMANENT_WHITELISTED_PACKAGE)
 

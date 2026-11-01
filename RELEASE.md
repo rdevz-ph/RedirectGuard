@@ -1,14 +1,16 @@
-# Redirect Guard v1.4
+# Redirect Guard v1.5
 
-### What's New in v1.4
+### What's New in v1.5
 
 #### Added
-- **Dedicated How It Works Dialog**: Moved the detailed explanation of how Redirect Guard works, Android security limitations, and the role of Shizuku into a separate dialog accessible through a button in the About screen.
-- **Companion Redirect Tester Link**: Added a direct button in the About dialog to download the companion Redirect Tester tool from GitHub releases.
-- **Direct Donate and Privacy Links**: Added direct buttons in the About dialog to open the donation page and privacy policy on the official website.
+- **Browser Presets Filter**: Added presets and a dedicated filter for popular mobile browsers in the Applications view because web browsers are the most common source of redirect ads.
+- **Official Website Shortcut**: Added a direct button and link to the official project website in the About dialog.
 
-#### Fixed
-- **Confirmation Dialog Button Visibility**: Fixed red button text color visibility in dark mode on the redirect confirmation dialog.
+#### Changed
+- **Chrome Excluded from System Whitelist**: Excluded Google Chrome (`com.android.chrome`) from the system apps whitelist so ad redirects originating from preinstalled Chrome are intercepted properly.
+
+> [!NOTE]
+> If an app is guarded but Redirect Guard does not trigger, verify that the source app (such as Google Chrome) is not whitelisted in the applications list. Also check that the Accessibility Service has not been killed by Android background battery restrictions.
 
 For full version history and previous release notes, see [CHANGELOG.md](https://github.com/rdevz-ph/RedirectGuard/blob/main/CHANGELOG.md).
 

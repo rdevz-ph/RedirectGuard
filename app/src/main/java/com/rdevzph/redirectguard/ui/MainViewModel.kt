@@ -160,7 +160,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleWhitelistSystemApps(whitelist: Boolean) {
         prefs.setWhitelistSystemApps(whitelist)
-        val systemAppPackages = _installedApps.value.filter { it.isSystemApp }.map { it.packageName }
+        val systemAppPackages = _installedApps.value
+            .filter { it.isSystemApp && it.packageName !in PreferencesManager.EXCLUDED_SYSTEM_PACKAGES }
+            .map { it.packageName }
         if (systemAppPackages.isNotEmpty()) {
             if (whitelist) {
                 prefs.addWhitelistedSources(systemAppPackages)
@@ -217,7 +219,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun checkAndUpdateSystemAppsWhitelistState() {
-        val systemApps = _installedApps.value.filter { it.isSystemApp }
+        val systemApps = _installedApps.value.filter { it.isSystemApp && it.packageName !in PreferencesManager.EXCLUDED_SYSTEM_PACKAGES }
         if (systemApps.isNotEmpty()) {
             val allWhitelisted = systemApps.all { prefs.isPackageWhitelisted(it.packageName) }
             if (allWhitelisted && !prefs.whitelistSystemApps.value) {
@@ -450,9 +452,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 @Suppress("DEPRECATION")
                 pm.getPackageInfo(context.packageName, 0)
             }
-            pInfo.versionName ?: "1.4"
+            pInfo.versionName ?: "Unknown"
         } catch (e: Exception) {
-            "1.4"
+            "Unknown"
         }
     }
 
@@ -466,7 +468,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 @Suppress("DEPRECATION")
                 pm.getPackageInfo(context.packageName, 0)
             }
-            val vName = pInfo.versionName ?: "1.0"
+            val vName = pInfo.versionName ?: "Unknown"
             val vCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                 pInfo.longVersionCode
             } else {
@@ -475,7 +477,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             "v$vName (Build $vCode)"
         } catch (e: Exception) {
-            "v1.0"
+            "Unknown"
         }
     }
 
@@ -492,6 +494,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {
             // Browser not available
         }
+    }
+
+    fun openWebsiteUrl() {
+        openUrl("https://rdevz-ph.github.io/RedirectGuard/")
     }
 
     fun openRepositoryUrl() {
@@ -511,7 +517,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun openRedirectTesterUrl() {
-        openUrl("https://github.com/rdevz-ph/RedirectGuard/releases/download/v$rawVersionName/RedirectGuardTester-v$rawVersionName-release.zip")
+        if (rawVersionName == "Unknown") {
+            openUrl("https://github.com/rdevz-ph/RedirectGuard/releases/latest")
+        } else {
+            openUrl("https://github.com/rdevz-ph/RedirectGuard/releases/download/v$rawVersionName/RedirectGuardTester-v$rawVersionName-release.zip")
+        }
     }
 
     private fun checkCanDrawOverlays(): Boolean {
@@ -548,7 +558,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 prefs.removeGuardedPackages(uninstalledGuarded)
             }
             prefs.applyInstalledShoppingPresets(installedPackageNames)
-            val systemPackages = apps.filter { it.isSystemApp }.map { it.packageName }
+            val systemPackages = apps
+                .filter { it.isSystemApp && it.packageName !in PreferencesManager.EXCLUDED_SYSTEM_PACKAGES }
+                .map { it.packageName }
             if (systemPackages.isNotEmpty()) {
                 if (prefs.whitelistSystemApps.value) {
                     val currentWhitelisted = prefs.whitelistedSourcePackages.value

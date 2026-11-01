@@ -1,0 +1,3 @@
+- Added browser presets because browsers are the most common source of redirect ads.
+- Excluded Google Chrome from the system apps whitelist so ad redirects originating from preinstalled Chrome are intercepted properly.
+- Added a direct link to the official project website in the About dialog.

@@ -2,6 +2,15 @@
 
 All notable changes to Redirect Guard are documented in this file.
 
+## [v1.5](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.5) - 2026-11-01
+
+### Added
+- **Browser Presets Filter**: Added presets and a dedicated filter for popular mobile browsers in the Applications view because web browsers are the most common source of redirect ads.
+- **Official Website Shortcut**: Added a direct button and link to the official project website in the About dialog.
+
+### Changed
+- **Chrome Excluded from System Whitelist**: Excluded Google Chrome (`com.android.chrome`) from the system apps whitelist so ad redirects originating from preinstalled Chrome are intercepted properly.
+
 ## [v1.4](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.4) - 2026-10-29
 
 ### Added

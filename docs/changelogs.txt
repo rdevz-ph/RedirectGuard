@@ -1,4 +1,9 @@
-## Version 1.4 | Latest Release | October 29, 2026
+## Version 1.5 | Latest Release | November 1, 2026
+- Browser Presets Filter: Added presets and a dedicated filter for popular mobile browsers in the Applications view because web browsers are the most common source of redirect ads.
+- Chrome Excluded from System Whitelist: Excluded Google Chrome from the system apps whitelist so ad redirects originating from preinstalled Chrome are intercepted properly.
+- Official Website Shortcut: Added a direct button and link to the official project website in the About dialog.
+
+## Version 1.4 | October 29, 2026
 - Dedicated How It Works Dialog: Moved the detailed explanation of how Redirect Guard works, Android security limitations, and the role of Shizuku into a separate dialog accessible through a button in the About screen.
 - Companion Redirect Tester Link: Added a direct button in the About dialog to download the companion Redirect Tester tool from GitHub releases.
 - Direct Donate and Privacy Links: Added direct buttons in the About dialog to open the donation page and privacy policy on the official website.

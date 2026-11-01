@@ -71,7 +71,8 @@ enum class AppsFilterTab {
     ALL,
     GUARDED,
     WHITELISTED,
-    PRESETS,
+    SHOPPING_PRESETS,
+    BROWSER_PRESETS,
     USER,
     SYSTEM
 }
@@ -97,7 +98,8 @@ fun AppsView(
 
     val guardedCount = installedApps.count { guardedPackages.contains(it.packageName) }
     val whitelistedCount = installedApps.count { isPackageWhitelisted(it.packageName) }
-    val presetCount = installedApps.count { app -> GuardedApp.DEFAULT_SHOPPING_PRESETS.any { it.packageName == app.packageName } }
+    val shoppingPresetCount = installedApps.count { app -> GuardedApp.DEFAULT_SHOPPING_PRESETS.any { it.packageName == app.packageName } }
+    val browserPresetCount = installedApps.count { app -> GuardedApp.DEFAULT_BROWSER_PRESETS.any { it.packageName == app.packageName } }
     val userCount = installedApps.count { !it.isSystemApp }
     val systemCount = installedApps.count { it.isSystemApp }
 
@@ -111,7 +113,8 @@ fun AppsView(
                 AppsFilterTab.ALL -> true
                 AppsFilterTab.GUARDED -> guardedPackages.contains(app.packageName)
                 AppsFilterTab.WHITELISTED -> isPackageWhitelisted(app.packageName)
-                AppsFilterTab.PRESETS -> GuardedApp.DEFAULT_SHOPPING_PRESETS.any { it.packageName == app.packageName }
+                AppsFilterTab.SHOPPING_PRESETS -> GuardedApp.DEFAULT_SHOPPING_PRESETS.any { it.packageName == app.packageName }
+                AppsFilterTab.BROWSER_PRESETS -> GuardedApp.DEFAULT_BROWSER_PRESETS.any { it.packageName == app.packageName }
                 AppsFilterTab.USER -> !app.isSystemApp
                 AppsFilterTab.SYSTEM -> app.isSystemApp
             }
@@ -178,9 +181,14 @@ fun AppsView(
                 label = { Text("Whitelisted ($whitelistedCount)") }
             )
             FilterChip(
-                selected = selectedFilter == AppsFilterTab.PRESETS,
-                onClick = { selectedFilter = AppsFilterTab.PRESETS },
-                label = { Text("Shopping Presets ($presetCount)") }
+                selected = selectedFilter == AppsFilterTab.SHOPPING_PRESETS,
+                onClick = { selectedFilter = AppsFilterTab.SHOPPING_PRESETS },
+                label = { Text("Shopping ($shoppingPresetCount)") }
+            )
+            FilterChip(
+                selected = selectedFilter == AppsFilterTab.BROWSER_PRESETS,
+                onClick = { selectedFilter = AppsFilterTab.BROWSER_PRESETS },
+                label = { Text("Browsers ($browserPresetCount)") }
             )
             FilterChip(
                 selected = selectedFilter == AppsFilterTab.USER,
@@ -459,6 +467,24 @@ fun AppsView(
                                                     style = MaterialTheme.typography.labelSmall,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+
+                                        val isBrowserPreset = remember(app.packageName) {
+                                            GuardedApp.DEFAULT_BROWSER_PRESETS.any { it.packageName == app.packageName }
+                                        }
+                                        if (isBrowserPreset) {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = MaterialTheme.colorScheme.tertiaryContainer
+                                            ) {
+                                                Text(
+                                                    text = "Browser Preset",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                 )
                                             }

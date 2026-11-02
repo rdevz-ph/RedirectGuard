@@ -1,5 +1,12 @@
 // External changelogs data source (preserves index.html cleanliness and file:// offline support)
-window.CHANGELOGS_TEXT = `## Version 1.5 | Latest Release | November 1, 2026
+window.CHANGELOGS_TEXT = `## Version 1.6 | Latest Release | November 3, 2026
+- Direct Launch for Redirect Tester: Added an Open Redirect Tester button in the About dialog when the companion Redirect Tester app is already installed so you can launch it immediately.
+- Companion Video Player Ad Redirect Test: Added a full-screen video player test in the companion Redirect Tester app with playback position saving to verify that video progress is preserved when redirects are blocked.
+### Fixed
+- Preserved App State on Blocked Redirects: Fixed an issue where returning from a blocked redirect reset the source app back to its home screen or reloaded media players by allowing the system window manager to return to the active task state naturally (#1).
+- Landscape Scrolling in Applications View: Fixed an issue where the search bar and filter controls remained pinned to the screen and blocked scrolling in landscape orientation by unifying the view into a single scrollable layout.
+
+## Version 1.5 | November 1, 2026
 - Browser Presets Filter: Added presets and a dedicated filter for popular mobile browsers in the Applications view because web browsers are the most common source of redirect ads.
 - Chrome Excluded from System Whitelist: Excluded Google Chrome from the system apps whitelist so ad redirects originating from preinstalled Chrome are intercepted properly.
 - Official Website Shortcut: Added a direct button and link to the official project website in the About dialog.

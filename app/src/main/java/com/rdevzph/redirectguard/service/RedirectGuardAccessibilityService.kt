@@ -260,9 +260,6 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         val mode = prefs.interceptionMode.value
 
         if (mode == InterceptionMode.AUTO_RETURN) {
-            if (!killed) {
-                performGlobalAction(GLOBAL_ACTION_BACK)
-            }
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -332,10 +329,6 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 action = RedirectAction.PROMPTED
             )
         }
-    }
-
-    fun performBackAction(): Boolean {
-        return performGlobalAction(GLOBAL_ACTION_BACK)
     }
 
     fun bringPackageToFront(packageName: String) {

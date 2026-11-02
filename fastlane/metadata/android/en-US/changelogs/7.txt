@@ -1,0 +1,4 @@
+- Fixed an issue where returning from a blocked redirect caused the source app to reload and lose its state or video progress (#1).
+- Added an Open Redirect Tester button in the About dialog when the companion tester app is already installed.
+- Fixed scrolling in the Applications view when using the phone in landscape orientation.
+

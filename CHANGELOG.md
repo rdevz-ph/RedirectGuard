@@ -2,6 +2,19 @@
 
 All notable changes to Redirect Guard are documented in this file.
 
+## [v1.6](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.6) - 2026-11-03
+
+### Added
+- **Direct Launch for Redirect Tester**: Added an Open Redirect Tester button in the About dialog when the companion Redirect Tester app is already installed so you can launch it immediately.
+- **Companion Video Player Ad Redirect Test**: Added a full-screen video player test in the companion Redirect Tester app with playback position saving to verify that video progress is preserved when redirects are blocked.
+
+### Fixed
+- **Preserved App State on Blocked Redirects**: Fixed an issue where returning from a blocked redirect reset the source app back to its home screen or reloaded media players by allowing the system window manager to return to the active task state naturally (#1).
+- **Landscape Scrolling in Applications View**: Fixed an issue where the search bar and filter controls remained pinned to the screen and blocked scrolling in landscape orientation by unifying the view into a single scrollable layout.
+
+### Changed
+- **Updated Store Screenshots**: Updated Fastlane and documentation screenshots to reflect the latest user interface.
+
 ## [v1.5](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.5) - 2026-11-01
 
 ### Added

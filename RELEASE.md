@@ -1,13 +1,17 @@
-# Redirect Guard v1.5
+# Redirect Guard v1.6
 
-### What's New in v1.5
+### What's New in v1.6
 
 #### Added
-- **Browser Presets Filter**: Added presets and a dedicated filter for popular mobile browsers in the Applications view because web browsers are the most common source of redirect ads.
-- **Official Website Shortcut**: Added a direct button and link to the official project website in the About dialog.
+- **Direct Launch for Redirect Tester**: Added an Open Redirect Tester button in the About dialog when the companion Redirect Tester app is already installed so you can launch it immediately.
+- **Companion Video Player Ad Redirect Test**: Added a full-screen video player test in the companion Redirect Tester app with playback position saving to verify that video progress is preserved when redirects are blocked.
+
+#### Fixed
+- **Preserved App State on Blocked Redirects**: Fixed an issue where returning from a blocked redirect reset the source app back to its home screen or reloaded media players by allowing the system window manager to return to the active task state naturally (#1).
+- **Landscape Scrolling in Applications View**: Fixed an issue where the search bar and filter controls remained pinned to the screen and blocked scrolling in landscape orientation by unifying the view into a single scrollable layout.
 
 #### Changed
-- **Chrome Excluded from System Whitelist**: Excluded Google Chrome (`com.android.chrome`) from the system apps whitelist so ad redirects originating from preinstalled Chrome are intercepted properly.
+- **Updated Store Screenshots**: Updated Fastlane and documentation screenshots to reflect the latest user interface.
 
 > [!NOTE]
 > If an app is guarded but Redirect Guard does not trigger, verify that the source app (such as Google Chrome) is not whitelisted in the applications list. Also check that the Accessibility Service has not been killed by Android background battery restrictions.

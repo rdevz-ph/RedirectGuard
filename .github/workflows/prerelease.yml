@@ -77,7 +77,7 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 --decode > app/keystore/release.jks
           fi
 
-      - name: Build APK
+      - name: Build Main APK
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/app/keystore/release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -86,12 +86,20 @@ jobs:
         run: |
           BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
           if [ "$BUILD_TYPE" = "debug" ]; then
-            bash ./gradlew assembleDebug
+            bash ./gradlew :app:assembleDebug
           elif [ "$BUILD_TYPE" = "both" ]; then
-            bash ./gradlew assembleRelease assembleDebug
+            bash ./gradlew :app:assembleRelease :app:assembleDebug
           else
-            bash ./gradlew assembleRelease
+            bash ./gradlew :app:assembleRelease
           fi
+
+      - name: Build Tester Release APK
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/app/keystore/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: bash ./gradlew :tester:assembleRelease
 
       - name: Prepare APKs
         run: |
@@ -108,6 +116,14 @@ jobs:
             for apk in app/build/outputs/apk/debug/*.apk; do
               if [ -f "$apk" ]; then
                 cp "$apk" "dist/RedirectGuard-${TAG}-debug.apk"
+              fi
+            done
+          fi
+          if [ -d "tester/build/outputs/apk/release" ]; then
+            TESTER_VERSION=$(grep 'versionName\s*=' tester/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/' | tr -d ' ')
+            for apk in tester/build/outputs/apk/release/*.apk; do
+              if [ -f "$apk" ]; then
+                cp "$apk" "dist/RedirectGuardTester-v${TESTER_VERSION}-release.apk"
               fi
             done
           fi

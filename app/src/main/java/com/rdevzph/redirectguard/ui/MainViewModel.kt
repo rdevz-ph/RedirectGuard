@@ -83,6 +83,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isAllRequirementsMet = MutableStateFlow(false)
     val isAllRequirementsMet: StateFlow<Boolean> = _isAllRequirementsMet.asStateFlow()
 
+    private val _isTesterInstalled = MutableStateFlow(false)
+    val isTesterInstalled: StateFlow<Boolean> = _isTesterInstalled.asStateFlow()
+
     private val _installedApps = MutableStateFlow<List<InstalledAppItem>>(emptyList())
     val installedApps: StateFlow<List<InstalledAppItem>> = _installedApps.asStateFlow()
 
@@ -122,6 +125,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val batteryReady = _isIgnoringBatteryOptimizations.value
 
         _isAllRequirementsMet.value = shizukuReady && accessibilityReady && overlayReady && notificationsReady && batteryReady
+        _isTesterInstalled.value = checkTesterInstalled()
     }
 
     fun setSetupCompleted(completed: Boolean) {
@@ -514,6 +518,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openPrivacyPolicyUrl() {
         openUrl("https://rdevz-ph.github.io/RedirectGuard/privacy.html")
+    }
+
+    companion object {
+        const val TESTER_PACKAGE_NAME = "com.rdevzph.redirectguard.tester"
+    }
+
+    fun checkTesterInstalled(): Boolean {
+        val pm = getApplication<Application>().packageManager
+        return try {
+            pm.getLaunchIntentForPackage(TESTER_PACKAGE_NAME) != null
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun refreshTesterInstalledStatus() {
+        _isTesterInstalled.value = checkTesterInstalled()
+    }
+
+    fun openOrDownloadRedirectTester() {
+        val context = getApplication<Application>()
+        val launchIntent = context.packageManager.getLaunchIntentForPackage(TESTER_PACKAGE_NAME)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        if (launchIntent != null) {
+            try {
+                context.startActivity(launchIntent)
+                return
+            } catch (e: Exception) {
+                // If launching the tester activity fails, fall back to downloading
+            }
+        }
+        openRedirectTesterUrl()
     }
 
     fun openRedirectTesterUrl() {

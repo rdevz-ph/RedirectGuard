@@ -97,8 +97,10 @@ class RedirectConfirmationActivity : ComponentActivity() {
             val current = promptData
             if (current != null) {
                 recordAction(current.sourcePkg, current.targetPkg, current.sourceName, current.targetName, RedirectAction.BLOCKED, current.deepLinkUri)
-                RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(current.targetPkg)
-                RedirectGuardAccessibilityService.instance?.bringPackageToFront(current.sourcePkg)
+                val killed = RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(current.targetPkg)
+                if (!killed) {
+                    RedirectGuardAccessibilityService.instance?.performBackAction()
+                }
             }
             finish()
         }

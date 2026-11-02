@@ -130,8 +130,9 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
             if (!isExplicitlyAllowed && !prefs.isPackageWhitelisted(packageName)) {
                 Log.w(TAG, "Active suppression: killing escape attempt by $packageName")
                 RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(packageName)
-                if (prefs.interceptionMode.value == InterceptionMode.AUTO_RETURN && lastActiveSourcePackage != null) {
-                    bringPackageToFront(lastActiveSourcePackage!!)
+                if (prefs.interceptionMode.value == InterceptionMode.AUTO_RETURN) {
+                    // Target killed via Shizuku; only press back if target escaped termination
+                    Log.d(TAG, "Active suppression killed escape attempt")
                 }
                 return
             }
@@ -259,7 +260,9 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         val mode = prefs.interceptionMode.value
 
         if (mode == InterceptionMode.AUTO_RETURN) {
-            bringPackageToFront(sourcePkg)
+            if (!killed) {
+                performGlobalAction(GLOBAL_ACTION_BACK)
+            }
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -331,11 +334,20 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         }
     }
 
+    fun performBackAction(): Boolean {
+        return performGlobalAction(GLOBAL_ACTION_BACK)
+    }
+
     fun bringPackageToFront(packageName: String) {
         if (packageName.isBlank()) return
         try {
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // Do not use FLAG_ACTIVITY_REORDER_TO_FRONT or FLAG_ACTIVITY_SINGLE_TOP.
+                // FLAG_ACTIVITY_REORDER_TO_FRONT pulls the root launcher activity (MainActivity)
+                // to the top of the task stack, which destroys the state of active child activities
+                // (like full-screen video players) and sends the user back to the home screen.
+                flags = flags and Intent.FLAG_ACTIVITY_REORDER_TO_FRONT.inv() and Intent.FLAG_ACTIVITY_SINGLE_TOP.inv()
             }
             if (launchIntent != null) {
                 startActivity(launchIntent)

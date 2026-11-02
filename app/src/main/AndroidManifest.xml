@@ -21,6 +21,8 @@
     <queries>
         <!-- Allows querying Shizuku status -->
         <package android:name="moe.shizuku.privileged.api" />
+        <!-- Allows querying Redirect Guard Tester -->
+        <package android:name="com.rdevzph.redirectguard.tester" />
         <!-- Allows querying installed launcher apps to resolve app names and icons -->
         <intent>
             <action android:name="android.intent.action.MAIN" />

@@ -65,6 +65,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -132,11 +133,18 @@ fun MainScreen(
     val showErrorLogs by viewModel.showErrorLogs.collectAsState()
     val showWarnLogs by viewModel.showWarnLogs.collectAsState()
     val logSearchQuery by viewModel.logSearchQuery.collectAsState()
+    val isTesterInstalled by viewModel.isTesterInstalled.collectAsState()
 
     var showLimitationsDialog by remember { mutableStateOf(false) }
     var showHowItWorksDialog by remember { mutableStateOf(false) }
     var showGuardAllWarningDialog by remember { mutableStateOf(false) }
     var showDisableWhitelistWarningDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showLimitationsDialog) {
+        if (showLimitationsDialog) {
+            viewModel.refreshTesterInstalledStatus()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -1131,19 +1139,19 @@ fun MainScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             OutlinedButton(
-                                onClick = { viewModel.openRedirectTesterUrl() },
+                                onClick = { viewModel.openOrDownloadRedirectTester() },
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Download,
+                                    imageVector = if (isTesterInstalled) Icons.AutoMirrored.Filled.OpenInNew else Icons.Default.Download,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Redirect Tester",
+                                    text = if (isTesterInstalled) "Open Redirect Tester" else "Download Redirect Tester",
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1
                                 )

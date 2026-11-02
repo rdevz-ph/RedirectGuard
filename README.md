@@ -104,6 +104,7 @@ The repository includes an optional companion app in the `:tester` module. It al
 The tester companion app allows you to:
 - Test redirects to common shopping apps (Shopee, Lazada, TikTok, and Amazon) using both web URLs and custom app schemes.
 - Run a 3-second delayed ad simulator to test background detection.
+- Test full-screen video player playback with an automatic ad redirect after 3 seconds to verify that video progress is saved and restored when a redirect is blocked.
 - Check if Redirect Guard is installed and whether its accessibility service is active.
 - Test custom deep links and package intents.
 

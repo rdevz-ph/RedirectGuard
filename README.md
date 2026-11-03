@@ -48,6 +48,9 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
   <a href="https://awesome-shizuku.vercel.app/apps/redirectguard"><img src="https://awesome-shizuku.vercel.app/get-it-on-shizustore.png" alt="Get it on ShizuStore" height="75"></a>
 </p>
 
+> [!NOTE]
+> If installation is blocked by Google Play Protect, this is normal for apps distributed outside the Google Play Store. It is recommended to install the app via [ShizuStore](https://shizustore.com/apps/redirectguard), or tap "More details" and choose "Install anyway".
+
 > [!TIP]
 > **Want to test or verify the app functionality?**
 > Please use **Redirect Tester** (`RedirectGuardTester-*-release.zip`): An optional companion tool packaged as a ZIP archive to prevent app store indexers from mistaking it for the main app. Extract the ZIP to install the companion tester APK and verify Redirect Guard safely.

@@ -13,6 +13,7 @@
   <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square" alt="Language"></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=flat-square" alt="Jetpack Compose"></a>
   <a href="https://shizuku.rikka.app"><img src="https://img.shields.io/badge/Shizuku-Supported-22C55E?style=flat-square" alt="Shizuku"></a>
+  <a href="https://www.virustotal.com/gui/file/df33168cb9de53ebce68afb792c7aae64e102ba9ebb55cd26ef3cbd4a131ef5e"><img src="https://img.shields.io/badge/VirusTotal-0%2F72%20Clean-34A853?style=flat-square&logo=virustotal" alt="VirusTotal"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-F97316?style=flat-square" alt="License"></a>
 </p>
 

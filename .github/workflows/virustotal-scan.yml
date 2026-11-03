@@ -1,0 +1,217 @@
+name: VirusTotal Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag to scan (e.g. v1.6 - leave blank for latest release)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    name: Scan Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Determine Target Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          else
+            TAG=$(gh release view --json tagName -q .tagName)
+          fi
+          echo "TARGET_TAG=$TAG" >> $GITHUB_ENV
+          echo "Selected release tag: $TAG"
+
+      - name: Download Release APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/apk
+          gh release download "$TARGET_TAG" --pattern "RedirectGuard-*-release.apk" --dir /tmp/apk
+          APK_FILE=$(ls /tmp/apk/*.apk | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: No release APK matching 'RedirectGuard-*-release.apk' found in release $TARGET_TAG"
+            exit 1
+          fi
+          echo "APK_PATH=$APK_FILE" >> $GITHUB_ENV
+          echo "Downloaded APK: $APK_FILE"
+
+      - name: Scan with VirusTotal and Update README
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+          APK_PATH: ${{ env.APK_PATH }}
+          TARGET_TAG: ${{ env.TARGET_TAG }}
+        run: |
+          python - << 'EOF'
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          api_key = os.environ.get("VIRUSTOTAL_API_KEY")
+          if not api_key:
+              print("Error: VIRUSTOTAL_API_KEY secret is not set in repository secrets.", file=sys.stderr)
+              print("Please add VIRUSTOTAL_API_KEY to Settings -> Secrets and variables -> Actions.", file=sys.stderr)
+              sys.exit(1)
+
+          apk_path = os.environ.get("APK_PATH")
+          if not apk_path or not os.path.exists(apk_path):
+              print(f"Error: APK file not found at {apk_path}", file=sys.stderr)
+              sys.exit(1)
+
+          # 1. Compute SHA-256 hash of the APK
+          sha256 = hashlib.sha256()
+          with open(apk_path, "rb") as f:
+              while chunk := f.read(65536):
+                  sha256.update(chunk)
+          file_hash = sha256.hexdigest()
+          print(f"File SHA-256: {file_hash}")
+
+          headers = {
+              "x-apikey": api_key,
+              "User-Agent": "RedirectGuard-Actions/1.0"
+          }
+
+          # 2. Check if a report already exists on VirusTotal
+          url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
+          req = urllib.request.Request(url, headers=headers)
+          stats = None
+
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  data = json.loads(resp.read().decode())
+                  stats = data["data"]["attributes"]["last_analysis_stats"]
+                  print("Found existing VirusTotal scan report for this file hash.")
+          except urllib.error.HTTPError as e:
+              if e.code == 404:
+                  print("File not previously analyzed on VirusTotal. Uploading file for scan...")
+              else:
+                  print(f"API Error {e.code}: {e.read().decode()}", file=sys.stderr)
+                  sys.exit(1)
+
+          # 3. If no report exists, upload the APK for analysis
+          if stats is None:
+              boundary = "----RedirectGuardBoundary7MA4YWxkTrZu0gW"
+              with open(apk_path, "rb") as f:
+                  file_bytes = f.read()
+
+              filename = os.path.basename(apk_path)
+              body = bytearray()
+              body.extend(f"--{boundary}\r\n".encode())
+              body.extend(f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode())
+              body.extend(b"Content-Type: application/vnd.android.package-archive\r\n\r\n")
+              body.extend(file_bytes)
+              body.extend(f"\r\n--{boundary}--\r\n".encode())
+
+              upload_req = urllib.request.Request(
+                  "https://www.virustotal.com/api/v3/files",
+                  data=body,
+                  headers={
+                      "x-apikey": api_key,
+                      "Content-Type": f"multipart/form-data; boundary={boundary}"
+                  }
+              )
+
+              with urllib.request.urlopen(upload_req) as resp:
+                  upload_res = json.loads(resp.read().decode())
+                  analysis_id = upload_res["data"]["id"]
+                  print(f"Upload complete. Analysis ID: {analysis_id}")
+
+              analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
+              for attempt in range(24):
+                  time.sleep(10)
+                  poll_req = urllib.request.Request(analysis_url, headers=headers)
+                  with urllib.request.urlopen(poll_req) as resp:
+                      poll_data = json.loads(resp.read().decode())
+                      status = poll_data["data"]["attributes"]["status"]
+                      print(f"Analysis status: {status} (attempt {attempt + 1}/24)")
+                      if status == "completed":
+                          stats = poll_data["data"]["attributes"]["stats"]
+                          break
+              else:
+                  print("Analysis polling timed out after 4 minutes.", file=sys.stderr)
+                  sys.exit(1)
+
+          # 4. Parse detection counts
+          malicious = stats.get("malicious", 0) + stats.get("suspicious", 0)
+          total_engines = (
+              stats.get("harmless", 0) +
+              stats.get("undetected", 0) +
+              stats.get("malicious", 0) +
+              stats.get("suspicious", 0)
+          )
+          print(f"VirusTotal Detections: {malicious}/{total_engines}")
+
+          if malicious == 0:
+              color = "34A853"
+              badge_label = f"0%2F{total_engines}%20Clean"
+          else:
+              color = "EA4335"
+              badge_label = f"{malicious}%2F{total_engines}%20Detected"
+
+          vt_report_url = f"https://www.virustotal.com/gui/file/{file_hash}"
+          badge_img = f"https://img.shields.io/badge/VirusTotal-{badge_label}-{color}?style=flat-square&logo=virustotal"
+          new_badge_line = f'  <a href="{vt_report_url}"><img src="{badge_img}" alt="VirusTotal"></a>'
+
+          # 5. Update README.md
+          readme_path = "README.md"
+          with open(readme_path, "r", encoding="utf-8") as f:
+              readme_content = f.read()
+
+          newline = "\r\n" if "\r\n" in readme_content else "\n"
+
+          if 'alt="VirusTotal"' in readme_content:
+              readme_content = re.sub(
+                  r'^[ \t]*<a href="[^"]*virustotal[^"]*"><img src="[^"]*" alt="VirusTotal"></a>[ \t]*\r?$',
+                  new_badge_line,
+                  readme_content,
+                  flags=re.MULTILINE
+              )
+          else:
+              license_anchor = '<a href="LICENSE">'
+              if license_anchor in readme_content:
+                  readme_content = readme_content.replace(
+                      f"  {license_anchor}",
+                      f"{new_badge_line}{newline}  {license_anchor}"
+                  )
+
+          with open(readme_path, "w", encoding="utf-8") as f:
+              f.write(readme_content)
+
+          print(f"Updated README.md badge to: {new_badge_line}")
+          EOF
+
+      - name: Commit and Push README Update
+        run: |
+          if ! git diff --quiet README.md; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "docs: update VirusTotal scan badge for ${{ env.TARGET_TAG }}"
+            git push
+            echo "Successfully updated and pushed README.md with the latest VirusTotal scan badge."
+          else
+            echo "README.md is already up to date with this VirusTotal scan result."
+          fi

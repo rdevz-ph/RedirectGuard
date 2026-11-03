@@ -33,6 +33,14 @@ Redirect Guard acts as a safety shield between your apps. When an ad, webpage, o
 | --- | --- | --- | --- |
 | <img src="docs/screenshots/Screenshot_1.jpg" alt="Redirect Guard Dashboard"> | <img src="docs/screenshots/Screenshot_2.jpg" alt="Redirect Guard Applications Management"> | <img src="docs/screenshots/Screenshot_3.jpg" alt="Redirect Guard Logs and Activity"> | <img src="docs/screenshots/Alert-Sample.jpg" alt="Redirect Guard Alert Prompt"> |
 
+### Feature Preview
+
+<p align="center">
+  <a href="https://youtube.com/shorts/GrSEhm5j5uE">
+    <img src="https://img.youtube.com/vi/GrSEhm5j5uE/maxresdefault.jpg" alt="Redirect Guard Feature Preview" width="600">
+  </a>
+</p>
+
 ## Download
 
 <p align="center">

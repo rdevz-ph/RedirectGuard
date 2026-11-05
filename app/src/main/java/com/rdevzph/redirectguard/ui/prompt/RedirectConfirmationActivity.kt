@@ -98,6 +98,7 @@ class RedirectConfirmationActivity : ComponentActivity() {
             if (current != null) {
                 recordAction(current.sourcePkg, current.targetPkg, current.sourceName, current.targetName, RedirectAction.BLOCKED, current.deepLinkUri)
                 RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(current.targetPkg)
+                RedirectGuardAccessibilityService.instance?.bringPackageToFront(current.sourcePkg)
             }
             finish()
         }

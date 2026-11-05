@@ -62,8 +62,18 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
 
         // 3. Handle Home Launcher: update source tracking so launches from home are never blocked
         if (isLauncherPackage(this, packageName)) {
-            val activeWindowPkg = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
             val nowTime = SystemClock.uptimeMillis()
+
+            // If the Home Launcher appears immediately after an auto-kill, it is a transient focus vacuum
+            // caused by the system dropping the terminated task, NOT an intentional user action.
+            val autoKillSource = lastAutoKillSourcePackage
+            if (autoKillSource != null && (nowTime - lastAutoKillTime < AUTO_KILL_VACUUM_WINDOW_MS)) {
+                Log.w(TAG, "Transient focus vacuum on Home Launcher ($packageName) detected after auto-kill. Refocusing source: $autoKillSource")
+                bringPackageToFront(autoKillSource)
+                return
+            }
+
+            val activeWindowPkg = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
             val isRecentTrailingEvent = (nowTime - lastAppActiveTime < 1500L) &&
                     lastAppActivePackage != null &&
                     !isLauncherPackage(this, lastAppActivePackage)
@@ -131,7 +141,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
                 Log.w(TAG, "Active suppression: killing escape attempt by $packageName")
                 RedirectGuardApplication.instance.shizukuHelper.forceStopPackage(packageName)
                 if (prefs.interceptionMode.value == InterceptionMode.AUTO_RETURN) {
-                    // Target killed via Shizuku; only press back if target escaped termination
+                    val src = lastAutoKillSourcePackage ?: lastActiveSourcePackage ?: lastAppActivePackage
+                    if (src != null) {
+                        bringPackageToFront(src)
+                    }
                     Log.d(TAG, "Active suppression killed escape attempt")
                 }
                 return
@@ -218,6 +231,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         }
 
         // Update tracking state
+        if (packageName == lastAutoKillSourcePackage) {
+            lastAutoKillSourcePackage = null
+            lastAutoKillTime = 0L
+        }
         lastActiveSourcePackage = packageName
         lastAppActivePackage = packageName
         lastAppActiveTime = now
@@ -260,6 +277,10 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         val mode = prefs.interceptionMode.value
 
         if (mode == InterceptionMode.AUTO_RETURN) {
+            lastAutoKillSourcePackage = sourcePkg
+            lastAutoKillTime = SystemClock.uptimeMillis()
+            bringPackageToFront(sourcePkg)
+
             val record = RedirectRecord(
                 id = UUID.randomUUID().toString(),
                 sourcePackage = sourcePkg,
@@ -334,13 +355,19 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
     fun bringPackageToFront(packageName: String) {
         if (packageName.isBlank()) return
         try {
+            // 1. Try focusing the existing task via Shizuku to preserve child activity state (video players, browser tabs)
+            val shizuku = RedirectGuardApplication.instance.shizukuHelper
+            if (shizuku.bringPackageToFront(packageName)) {
+                Log.d(TAG, "Restored task for $packageName via Shizuku task focus")
+                return
+            }
+
+            // 2. Fallback to launch intent without stack-resetting flags
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                // Do not use FLAG_ACTIVITY_REORDER_TO_FRONT or FLAG_ACTIVITY_SINGLE_TOP.
-                // FLAG_ACTIVITY_REORDER_TO_FRONT pulls the root launcher activity (MainActivity)
-                // to the top of the task stack, which destroys the state of active child activities
-                // (like full-screen video players) and sends the user back to the home screen.
-                flags = flags and Intent.FLAG_ACTIVITY_REORDER_TO_FRONT.inv() and Intent.FLAG_ACTIVITY_SINGLE_TOP.inv()
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                // Do not use FLAG_ACTIVITY_REORDER_TO_FRONT, FLAG_ACTIVITY_CLEAR_TOP, or FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                // to avoid resetting child activities like full-screen video players or browser tabs back to MainActivity.
+                flags = flags and Intent.FLAG_ACTIVITY_REORDER_TO_FRONT.inv() and Intent.FLAG_ACTIVITY_CLEAR_TOP.inv() and Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED.inv()
             }
             if (launchIntent != null) {
                 startActivity(launchIntent)
@@ -465,8 +492,11 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         private const val MIN_TRIGGER_INTERVAL_MS = 1000L
         private const val ALLOW_WINDOW_MS = 15000L
         private const val ACTIVE_SUPPRESSION_WINDOW_MS = 4000L
+        private const val AUTO_KILL_VACUUM_WINDOW_MS = 1500L
 
         private var lastActiveSourcePackage: String? = null
+        private var lastAutoKillSourcePackage: String? = null
+        private var lastAutoKillTime: Long = 0L
         private var lastTransitionTime: Long = 0L
 
         private var lastAppActivePackage: String? = null

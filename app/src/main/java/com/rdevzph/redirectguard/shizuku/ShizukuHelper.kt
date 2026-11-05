@@ -377,6 +377,99 @@ class ShizukuHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Resolves the taskId associated with the specified package from dumpsys activity recents.
+     */
+    fun getTaskIdForPackage(packageName: String): Int? {
+        if (!_isPermissionGranted.value || packageName.isBlank()) return null
+        return try {
+            val (exitCode, output) = executeCommand(arrayOf("dumpsys", "activity", "recents"))
+            if (exitCode != 0 || output.isBlank()) return null
+            parseTaskIdFromRecents(output, packageName)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting taskId for $packageName via Shizuku", e)
+            null
+        }
+    }
+
+    /**
+     * Parses the taskId for the target package from dumpsys activity recents output.
+     */
+    fun parseTaskIdFromRecents(dumpsysOutput: String, packageName: String): Int? {
+        val taskIdRegex = Regex("""Task(?:Record)?\{[0-9a-fA-F]+\s+#(\d+)""")
+        val idRegex = Regex("""\b(?:id|taskId)=(\d+)""")
+
+        // 1. Check Recent tasks section
+        val recentSection = dumpsysOutput.split("Visible recent tasks")[0]
+        val tasks = recentSection.split(Regex("""\*\s+Recent\s+#\d+:""")).drop(1)
+
+        for (task in tasks) {
+            val firstLine = task.trimStart().lines().firstOrNull() ?: ""
+            if (task.contains("pkg=$packageName") ||
+                task.contains("cmp=$packageName/") ||
+                task.contains(":$packageName") ||
+                task.contains("A=$packageName") ||
+                task.contains("A=u0:$packageName") ||
+                firstLine.contains(packageName)
+            ) {
+                val match = taskIdRegex.find(task) ?: idRegex.find(task)
+                if (match != null) {
+                    val id = match.groupValues[1].toIntOrNull()
+                    if (id != null && id > 0) return id
+                }
+            }
+        }
+
+        // 2. Fallback to Visible recent tasks section
+        if (dumpsysOutput.contains("Visible recent tasks")) {
+            val visibleSection = dumpsysOutput.split("Visible recent tasks")[1]
+            val vTasks = visibleSection.split(Regex("""\*\s+RecentTaskInfo\s+#\d+:""")).drop(1)
+            for (vTask in vTasks) {
+                if (vTask.contains("pkg=$packageName") || vTask.contains("cmp=$packageName/") || vTask.contains("=$packageName")) {
+                    val match = idRegex.find(vTask) ?: taskIdRegex.find(vTask)
+                    if (match != null) {
+                        val id = match.groupValues[1].toIntOrNull()
+                        if (id != null && id > 0) return id
+                    }
+                }
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * Brings the task with the specified taskId to the front via Shizuku shell.
+     */
+    fun focusTask(taskId: Int): Boolean {
+        if (!_isPermissionGranted.value || taskId <= 0) return false
+        return try {
+            val (exitCode1, _) = executeCommand(arrayOf("am", "task", "focus", taskId.toString()))
+            if (exitCode1 == 0) return true
+            val (exitCode2, _) = executeCommand(arrayOf("cmd", "activity", "task", "to-top", taskId.toString()))
+            if (exitCode2 == 0) return true
+            val (exitCode3, _) = executeCommand(arrayOf("am", "stack", "to-top", taskId.toString()))
+            exitCode3 == 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error focusing task $taskId via Shizuku", e)
+            false
+        }
+    }
+
+    /**
+     * Brings the existing task for the specified package to the front using Shizuku task focus.
+     * This preserves active child activity state (such as full-screen video players).
+     */
+    fun bringPackageToFront(packageName: String): Boolean {
+        if (!_isPermissionGranted.value || packageName.isBlank()) return false
+        val taskId = getTaskIdForPackage(packageName)
+        if (taskId != null && focusTask(taskId)) {
+            Log.d(TAG, "Successfully focused task $taskId for $packageName via Shizuku")
+            return true
+        }
+        return false
+    }
+
     private fun checkShizukuInstalled(): Boolean {
         return try {
             context.packageManager.getPackageInfo(SHIZUKU_PACKAGE, 0)

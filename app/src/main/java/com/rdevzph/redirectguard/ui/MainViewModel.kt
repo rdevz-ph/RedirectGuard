@@ -19,6 +19,7 @@ import com.rdevzph.redirectguard.service.RedirectGuardAccessibilityService
 import com.rdevzph.redirectguard.util.AppLogEntry
 import com.rdevzph.redirectguard.util.AppLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -119,7 +120,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         com.rdevzph.redirectguard.notification.NotificationHelper.updateStatusNotification(getApplication())
 
         val shizukuReady = shizuku.isShizukuRunning.value && shizuku.isPermissionGranted.value
-        val accessibilityReady = _accessibilityHealth.value != com.rdevzph.redirectguard.model.AccessibilityHealthState.DISABLED
+        val accessibilityReady = !prefs.isGuardEnabled.value || _accessibilityHealth.value != com.rdevzph.redirectguard.model.AccessibilityHealthState.DISABLED
         val overlayReady = _canDrawOverlays.value
         val notificationsReady = _areNotificationsEnabled.value
         val batteryReady = _isIgnoringBatteryOptimizations.value
@@ -134,6 +135,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleGuard(enabled: Boolean) {
         prefs.setGuardEnabled(enabled)
+        if (shizuku.isShizukuRunning.value && shizuku.isPermissionGranted.value) {
+            viewModelScope.launch(Dispatchers.IO) {
+                if (enabled) {
+                    val component = RedirectGuardAccessibilityService.getServiceComponentName(getApplication())
+                    val success = shizuku.enableAccessibilityService(component)
+                    AppLogger.i("MainViewModel", "Protection resumed: enabled accessibility service via Shizuku (success=$success)")
+                } else {
+                    val success = shizuku.disableAccessibilityService()
+                    AppLogger.i("MainViewModel", "Protection paused: disabled accessibility service via Shizuku (success=$success)")
+                }
+                delay(350)
+                withContext(Dispatchers.Main) {
+                    refreshStatus()
+                }
+            }
+        } else {
+            refreshStatus()
+        }
     }
 
     fun toggleStatusNotification(enabled: Boolean) {
@@ -333,8 +352,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             shizuku.grantOverlayPermission()
             shizuku.grantNotificationPermission()
             shizuku.whitelistBatteryOptimization()
-            Thread.sleep(400)
+            delay(400)
             withContext(Dispatchers.Main) {
+                if (!prefs.isGuardEnabled.value) {
+                    prefs.setGuardEnabled(true)
+                }
                 refreshStatus()
             }
         }
@@ -344,8 +366,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             val component = RedirectGuardAccessibilityService.getServiceComponentName(getApplication())
             shizuku.enableAccessibilityService(component)
-            Thread.sleep(350)
+            delay(350)
             withContext(Dispatchers.Main) {
+                if (!prefs.isGuardEnabled.value) {
+                    prefs.setGuardEnabled(true)
+                }
                 refreshStatus()
             }
         }
@@ -354,7 +379,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun clearAccessibilityEntriesViaShizuku() {
         viewModelScope.launch(Dispatchers.IO) {
             shizuku.disableAccessibilityService()
+            delay(350)
             withContext(Dispatchers.Main) {
+                if (prefs.isGuardEnabled.value) {
+                    prefs.setGuardEnabled(false)
+                }
                 refreshStatus()
             }
         }

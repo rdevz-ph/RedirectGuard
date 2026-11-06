@@ -46,9 +46,10 @@ class MainActivity : ComponentActivity() {
             RedirectGuardTheme {
                 val isAllRequirementsMet by viewModel.isAllRequirementsMet.collectAsState()
                 val hasCompletedSetup by viewModel.hasCompletedSetup.collectAsState()
+                val isGuardEnabled by viewModel.isGuardEnabled.collectAsState()
                 var manuallyOpenedWizard by remember { mutableStateOf(false) }
 
-                if (!isAllRequirementsMet || !hasCompletedSetup || manuallyOpenedWizard) {
+                if (!hasCompletedSetup || manuallyOpenedWizard || (isGuardEnabled && !isAllRequirementsMet)) {
                     SetupWizardScreen(
                         viewModel = viewModel,
                         canDismiss = isAllRequirementsMet && hasCompletedSetup,

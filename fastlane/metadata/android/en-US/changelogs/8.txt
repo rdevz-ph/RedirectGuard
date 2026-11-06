@@ -1,0 +1,4 @@
+- Added automatic accessibility service disabling via Shizuku when protection is paused so banking apps can open without warnings.
+- Optimized source app task restoration via Shizuku shell to preserve video playback and active screen states without resetting child activities (#2).
+- Added a home screen focus guard to keep focus on the originating app after an auto-kill.
+

@@ -1,17 +1,14 @@
-# Redirect Guard v1.6
+# Redirect Guard v1.7
 
-### What's New in v1.6
+### What's New in v1.7
 
 #### Added
-- **Direct Launch for Redirect Tester**: Added an Open Redirect Tester button in the About dialog when the companion Redirect Tester app is already installed so you can launch it immediately.
-- **Companion Video Player Ad Redirect Test**: Added a full-screen video player test in the companion Redirect Tester app with playback position saving to verify that video progress is preserved when redirects are blocked.
+- **Automatic Accessibility Toggle on Pause**: Added an automatic toggle that disables the accessibility service via Shizuku when protection is paused, allowing banking apps to open without accessibility warnings, and re-enables it automatically when protection is resumed.
 
-#### Fixed
-- **Preserved App State on Blocked Redirects**: Fixed an issue where returning from a blocked redirect reset the source app back to its home screen or reloaded media players by allowing the system window manager to return to the active task state naturally (#1).
-- **Landscape Scrolling in Applications View**: Fixed an issue where the search bar and filter controls remained pinned to the screen and blocked scrolling in landscape orientation by unifying the view into a single scrollable layout.
-
-#### Changed
-- **Updated Store Screenshots**: Updated Fastlane and documentation screenshots to reflect the latest user interface.
+#### Optimized
+- **Source App Task Restoration**: Optimized source app restoration after an auto-kill by focusing the active task ID through Shizuku shell to preserve video playback and active screens without resetting child activities ([#2](https://github.com/rdevz-ph/RedirectGuard/issues/2)).
+- **Home Screen Focus Guard**: Added a focus guard in the accessibility service to catch and redirect unwanted launcher focus back to the originating app after an auto-kill.
+- **Safe Source App Restoration**: Re-enabled safe source package restoration across instant auto-return and confirmation prompt blocking.
 
 > [!NOTE]
 > If an app is guarded but Redirect Guard does not trigger, verify that the source app (such as Google Chrome) is not whitelisted in the applications list. Also check that the Accessibility Service has not been killed by Android background battery restrictions.

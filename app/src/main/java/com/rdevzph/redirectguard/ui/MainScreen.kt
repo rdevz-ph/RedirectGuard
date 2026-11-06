@@ -346,12 +346,19 @@ fun MainScreen(
                         )
                     }
                     AccessibilityHealthState.DISABLED -> {
+                        val isPaused = !isGuardEnabled
                         StatusCard(
                             icon = Icons.Default.AccessibilityNew,
                             title = "Accessibility Service",
-                            statusText = "Not Running",
+                            statusText = if (isPaused) "Paused" else "Not Running",
                             isSuccess = false,
-                            description = "Required to detect app transitions when an ad triggers an external shopping application. Does not read screen text or private data.",
+                            statusBgOverride = if (isPaused) StatusInactiveContainer else null,
+                            statusFgOverride = if (isPaused) StatusInactive else null,
+                            description = if (isPaused) {
+                                "Turned off while protection is paused so banking and sensitive apps can open without accessibility service warnings."
+                            } else {
+                                "Required to detect app transitions when an ad triggers an external shopping application. Does not read screen text or private data."
+                            },
                             actionButtonText = if (hasShizukuPrivilege) "1-Tap Enable (Shizuku)" else "Enable in Settings",
                             onActionClick = {
                                 if (hasShizukuPrivilege) {

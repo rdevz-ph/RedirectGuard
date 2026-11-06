@@ -1,5 +1,12 @@
 // External changelogs data source (preserves index.html cleanliness and file:// offline support)
-window.CHANGELOGS_TEXT = `## Version 1.6 | Latest Release | November 3, 2026
+window.CHANGELOGS_TEXT = `## Version 1.7 | Latest Release | November 6, 2026
+- Automatic Accessibility Toggle on Pause: Added an automatic toggle that disables the accessibility service via Shizuku when protection is paused, allowing banking apps to open without accessibility warnings, and re-enables it automatically when protection is resumed.
+### Optimized
+- Source App Task Restoration: Optimized source app restoration after an auto-kill by focusing the active task ID through Shizuku shell to preserve video playback and active screens without resetting child activities (#2).
+- Home Screen Focus Guard: Added a focus guard in the accessibility service to catch and redirect unwanted launcher focus back to the originating app after an auto-kill.
+- Safe Source App Restoration: Re-enabled safe source package restoration across instant auto-return and confirmation prompt blocking.
+
+## Version 1.6 | November 3, 2026
 - Direct Launch for Redirect Tester: Added an Open Redirect Tester button in the About dialog when the companion Redirect Tester app is already installed so you can launch it immediately.
 - Companion Video Player Ad Redirect Test: Added a full-screen video player test in the companion Redirect Tester app with playback position saving to verify that video progress is preserved when redirects are blocked.
 ### Fixed

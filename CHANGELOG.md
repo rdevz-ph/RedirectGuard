@@ -2,6 +2,16 @@
 
 All notable changes to Redirect Guard are documented in this file.
 
+## [v1.7](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.7) - 2026-11-06
+
+### Added
+- **Automatic Accessibility Toggle on Pause**: Added an automatic toggle that disables the accessibility service via Shizuku when protection is paused, allowing banking apps to open without accessibility warnings, and re-enables it automatically when protection is resumed.
+
+### Optimized
+- **Source App Task Restoration**: Optimized source app restoration after an auto-kill by focusing the active task ID through Shizuku shell to preserve video playback and active screens without resetting child activities ([#2](https://github.com/rdevz-ph/RedirectGuard/issues/2)).
+- **Home Screen Focus Guard**: Added a focus guard in the accessibility service to catch and redirect unwanted launcher focus back to the originating app after an auto-kill.
+- **Safe Source App Restoration**: Re-enabled safe source package restoration across instant auto-return and confirmation prompt blocking.
+
 ## [v1.6](https://github.com/rdevz-ph/RedirectGuard/releases/tag/v1.6) - 2026-11-03
 
 ### Added

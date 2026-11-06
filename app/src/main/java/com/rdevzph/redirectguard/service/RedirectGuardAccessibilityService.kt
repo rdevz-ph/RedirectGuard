@@ -352,6 +352,11 @@ class RedirectGuardAccessibilityService : AccessibilityService() {
         }
     }
 
+    fun notifyAutoKill(sourcePkg: String) {
+        lastAutoKillSourcePackage = sourcePkg
+        lastAutoKillTime = SystemClock.uptimeMillis()
+    }
+
     fun bringPackageToFront(packageName: String) {
         if (packageName.isBlank()) return
         try {

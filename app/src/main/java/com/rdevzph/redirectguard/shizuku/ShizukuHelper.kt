@@ -174,9 +174,15 @@ class ShizukuHelper(private val context: Context) {
             val list = trimmed.split(":").filter { it.isNotBlank() && it != "null" }
             val cleaned = list.filter { !it.contains(context.packageName) }
             if (list.any { it.contains(context.packageName) }) {
-                executeCommand(
-                    arrayOf("settings", "put", "secure", "enabled_accessibility_services", cleaned.joinToString(":").ifEmpty { "null" })
-                )
+                if (cleaned.isNotEmpty()) {
+                    executeCommand(
+                        arrayOf("settings", "put", "secure", "enabled_accessibility_services", cleaned.joinToString(":"))
+                    )
+                } else {
+                    executeCommand(
+                        arrayOf("settings", "delete", "secure", "enabled_accessibility_services")
+                    )
+                }
             }
             val newServices = (cleaned + componentName).joinToString(":")
             val (exitCode, _) = executeCommand(
@@ -199,12 +205,23 @@ class ShizukuHelper(private val context: Context) {
             val (_, currentServices) = executeCommand(
                 arrayOf("settings", "get", "secure", "enabled_accessibility_services")
             )
-            val cleaned = currentServices.trim().split(":")
-                .filter { it.isNotBlank() && !it.contains(context.packageName) }
-                .joinToString(":")
-            val (exitCode, _) = executeCommand(
-                arrayOf("settings", "put", "secure", "enabled_accessibility_services", cleaned.ifEmpty { "null" })
-            )
+            val list = currentServices.trim().split(":").filter { it.isNotBlank() && it != "null" }
+            val cleaned = list.filter { !it.contains(context.packageName) }
+            val exitCode = if (cleaned.isNotEmpty()) {
+                val (code, _) = executeCommand(
+                    arrayOf("settings", "put", "secure", "enabled_accessibility_services", cleaned.joinToString(":"))
+                )
+                code
+            } else {
+                val (code, _) = executeCommand(
+                    arrayOf("settings", "delete", "secure", "enabled_accessibility_services")
+                )
+                if (code != 0) {
+                    executeCommand(arrayOf("settings", "put", "secure", "enabled_accessibility_services", "null"))
+                }
+                executeCommand(arrayOf("settings", "put", "secure", "accessibility_enabled", "0"))
+                code
+            }
             exitCode == 0
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing accessibility service via Shizuku", e)

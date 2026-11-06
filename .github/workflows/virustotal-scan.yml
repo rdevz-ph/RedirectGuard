@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release tag to scan (e.g. v1.6 - leave blank for latest release)'
+        description: 'Release tag to scan (e.g. v1.7 - leave blank for latest release)'
         required: false
         default: ''
+      update_files:
+        description: 'Update and commit badge changes to README.md and docs/index.html'
+        required: true
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -53,11 +58,12 @@ jobs:
           echo "APK_PATH=$APK_FILE" >> $GITHUB_ENV
           echo "Downloaded APK: $APK_FILE"
 
-      - name: Scan with VirusTotal and Update README
+      - name: Scan with VirusTotal and Update Badges
         env:
           VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
           APK_PATH: ${{ env.APK_PATH }}
           TARGET_TAG: ${{ env.TARGET_TAG }}
+          UPDATE_FILES: ${{ github.event.inputs.update_files }}
         run: |
           python - << 'EOF'
           import hashlib
@@ -175,7 +181,30 @@ jobs:
           badge_img = f"https://img.shields.io/badge/VirusTotal-{badge_label}-{color}?style=flat-square&logo=virustotal"
           new_badge_line = f'  <a href="{vt_report_url}"><img src="{badge_img}" alt="VirusTotal"></a>'
 
-          # 5. Update README.md
+          # 5. Check whether to update files or run in test mode
+          update_files_input = os.environ.get("UPDATE_FILES", "true").strip().lower()
+          should_update = update_files_input not in ("false", "0", "no")
+
+          # 6. Render GitHub Actions Step Summary
+          step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if step_summary:
+              target_tag = os.environ.get("TARGET_TAG", "unknown")
+              status_label = "Clean" if malicious == 0 else "Detected"
+              mode_label = "Applied to README.md and docs/index.html" if should_update else "Skipped (Test / Dry-Run Mode)"
+              with open(step_summary, "a", encoding="utf-8") as f:
+                  f.write("### VirusTotal Scan Summary\n\n")
+                  f.write(f"- **Target Tag**: `{target_tag}`\n")
+                  f.write(f"- **SHA-256**: `{file_hash}`\n")
+                  f.write(f"- **Detections**: **{malicious}/{total_engines}** ({status_label})\n")
+                  f.write(f"- **VirusTotal Report**: [{vt_report_url}]({vt_report_url})\n")
+                  f.write(f"- **Badge Preview**: ![{badge_label}]({badge_img})\n")
+                  f.write(f"- **File Updates**: `{mode_label}`\n")
+
+          if not should_update:
+              print("Test mode enabled: Skipped writing changes to README.md and docs/index.html.")
+              sys.exit(0)
+
+          # 7. Update README.md
           readme_path = "README.md"
           with open(readme_path, "r", encoding="utf-8") as f:
               readme_content = f.read()
@@ -184,8 +213,8 @@ jobs:
 
           if 'alt="VirusTotal"' in readme_content:
               readme_content = re.sub(
-                  r'^[ \t]*<a href="[^"]*virustotal[^"]*"><img src="[^"]*" alt="VirusTotal"></a>[ \t]*\r?$',
-                  new_badge_line,
+                  r'^([ \t]*)<a href="[^"]*virustotal[^"]*"[^>]*><img src="[^"]*" alt="VirusTotal"[^>]*></a>[ \t]*\r?$',
+                  lambda m: f'{m.group(1)}<a href="{vt_report_url}"><img src="{badge_img}" alt="VirusTotal"></a>',
                   readme_content,
                   flags=re.MULTILINE
               )
@@ -201,17 +230,37 @@ jobs:
               f.write(readme_content)
 
           print(f"Updated README.md badge to: {new_badge_line}")
+
+          # 8. Update docs/index.html
+          docs_index_path = "docs/index.html"
+          if os.path.exists(docs_index_path):
+              with open(docs_index_path, "r", encoding="utf-8") as f:
+                  docs_content = f.read()
+
+              if 'alt="VirusTotal"' in docs_content:
+                  docs_content = re.sub(
+                      r'^([ \t]*)<a href="[^"]*virustotal[^"]*"[^>]*><img src="[^"]*" alt="VirusTotal"[^>]*></a>[ \t]*\r?$',
+                      lambda m: f'{m.group(1)}<a href="{vt_report_url}" target="_blank" rel="noopener noreferrer"><img src="{badge_img}" alt="VirusTotal"></a>',
+                      docs_content,
+                      flags=re.MULTILINE
+                  )
+                  with open(docs_index_path, "w", encoding="utf-8") as f:
+                      f.write(docs_content)
+                  print("Updated docs/index.html badge with matching indentation.")
+              else:
+                  print("Notice: alt=\"VirusTotal\" not found in docs/index.html; skipping docs update.")
           EOF
 
-      - name: Commit and Push README Update
+      - name: Commit and Push Badge Updates
+        if: ${{ github.event.inputs.update_files != false && github.event.inputs.update_files != 'false' }}
         run: |
-          if ! git diff --quiet README.md; then
+          if ! git diff --quiet README.md docs/index.html; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add README.md
+            git add README.md docs/index.html
             git commit -m "docs: update VirusTotal scan badge for ${{ env.TARGET_TAG }}"
             git push
-            echo "Successfully updated and pushed README.md with the latest VirusTotal scan badge."
+            echo "Successfully updated and pushed README.md and docs/index.html with the latest VirusTotal scan badge."
           else
-            echo "README.md is already up to date with this VirusTotal scan result."
+            echo "README.md and docs/index.html are already up to date with this VirusTotal scan result."
           fi

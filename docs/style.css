@@ -638,6 +638,31 @@ html[data-theme="light"] .btn-badge {
   opacity: 0.95;
 }
 
+.security-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -0.25rem auto 1rem;
+}
+
+.security-badge-row a {
+  display: inline-flex;
+  border-radius: var(--md-sys-shape-corner-extra-small, 4px);
+  overflow: hidden;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.security-badge-row a:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
+}
+
+.security-badge-row a img {
+  height: 20px;
+  width: auto;
+  display: block;
+}
+
 /* Material Design 3 Alert Callout */
 .m3-alert {
   --alert-accent: var(--shield-blue);

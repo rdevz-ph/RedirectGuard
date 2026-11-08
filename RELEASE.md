@@ -8,7 +8,6 @@
 #### Optimized
 - **Source App Task Restoration**: Optimized source app restoration after an auto-kill by focusing the active task ID through Shizuku shell to preserve video playback and active screens without resetting child activities ([#2](https://github.com/rdevz-ph/RedirectGuard/issues/2)).
 - **Home Screen Focus Guard**: Added a focus guard in the accessibility service to catch and redirect unwanted launcher focus back to the originating app after an auto-kill.
-- **Safe Source App Restoration**: Optimized source package restoration using `am task focus <taskId>` across instant auto-return and confirmation prompt blocking.
 
 > [!NOTE]
 > If an app is guarded but Redirect Guard does not trigger, verify that the source app (such as Google Chrome) is not whitelisted in the applications list. Also check that the Accessibility Service has not been killed by Android background battery restrictions.
